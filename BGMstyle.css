@@ -1,0 +1,1073 @@
+/* ===== リセット & ベース ===== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* htmlはビューポート全体を占める背景。デスクトップの広い画面では
+   この背景色が黒枠の外側に見える（スマホを机の上に置いたような見え方）。 */
+html {
+  min-height: 100vh;
+  background: #e2ded6;
+}
+
+body {
+  max-width: 640px;   /* スマホ相当の横幅に制限。これより広い画面では左右に背景がのぞく */
+  margin: 0 auto;      /* 中央寄せ */
+  min-height: 100vh;
+  border: 8px solid #1a1a1a;
+  border-radius: 25px;
+  background: linear-gradient(135deg, #fefefe 0%, #f8f5f1 100%);
+  font-family: 'Zen Maru Gothic', 'Noto Sans JP', sans-serif;
+  overflow-x: hidden;
+  box-shadow:
+    0 0 0 2px #333,
+    0 8px 20px rgba(0,0,0,0.3);
+}
+
+/* ===== タイマー表示 ===== */
+.timer-display {
+  text-align: center;
+  margin: 1rem auto;
+  padding: 1.2rem;
+  max-width: 320px;
+  background:
+    linear-gradient(145deg, #f5f3f0, #ebe8e4),
+    radial-gradient(circle at 30% 30%, rgba(255,215,0,0.1), transparent);
+  border: 3px solid #D2B48C;
+  border-radius: 16px;
+  box-shadow:
+    0 6px 16px rgba(0,0,0,0.12),
+    inset 0 1px 3px rgba(255,255,255,0.8);
+  position: relative;
+  overflow: hidden;
+}
+
+.timer-display::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(45deg, transparent 48%, rgba(255,255,255,0.3) 50%, transparent 52%);
+  pointer-events: none;
+}
+
+#timer-remaining {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #D4AF37;
+  text-shadow:
+    0 0 12px rgba(212,175,55,0.3),
+    2px 2px 4px rgba(0,0,0,0.2);
+  letter-spacing: 0.1em;
+  display: block;
+  margin-bottom: 0.3rem;
+  position: relative;
+  z-index: 1;
+}
+
+#timer-status {
+  font-size: 1rem;
+  color: #8B4513;
+  text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+  position: relative;
+  z-index: 1;
+  font-weight: 600;
+}
+
+/* ===== メインコンテナ ===== */
+#btnGrid {
+  max-width: 580px;
+  margin: 0.1rem auto;
+  padding: 0 0.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ===== BGM グループ（時間帯3行をまとめるレイアウトのみ。枠は持たない） ===== */
+/* 朝・昼・夜の行は隙間なく連結させたいので gap は 0。
+   Nループ欄・音量バーには margin-top で個別に余白を戻す。 */
+.bgm-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.bgm-section .phase-row { padding: 0.6rem 0.1rem; }
+
+/* ===== 音量バー（横長・共通） ===== */
+.volume-section {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.2rem;
+  margin-top: 0.7rem;
+  width: 100%;
+}
+.volume-section .vol-icon { font-size: 1rem; }
+.volume-section input[type="range"] { flex: 1; accent-color: #D4AF37; }
+#volume-value { font-size: 0.8rem; font-weight: 700; color: #8B4513; min-width: 34px; text-align: right; }
+
+/* ===== 各時間帯の行（枠なし・隙間なし。境目は下線1本だけ） ===== */
+.phase-row {
+  padding: 1rem 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.99rem;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+.phase-row::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  opacity: 0.08;
+  background-size: cover;
+  background-position: center;
+  pointer-events: none;
+}
+
+/* 各時間帯の背景色（枠は持たないので色の帯だけで区別する） */
+/* 朝だけ padding-top が広いのは、ボタンの上に「休憩／作業／作業→休憩」の
+   ラベルを出しているため（このファイル後方の v41 追加分を参照）。 */
+.phase-row--morning {
+  background: linear-gradient(135deg, rgba(255,243,224,0.95), rgba(255,224,178,0.55));
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  padding-top: 1.6rem;
+}
+.phase-row--morning::before {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="55" r="14" fill="%23FF9800" opacity="0.25"/><path d="M20,55 L80,55" stroke="%23FFB74D" stroke-width="3" opacity="0.3"/><path d="M50,30 L50,20 M30,40 L23,33 M70,40 L77,33" stroke="%23FF9800" stroke-width="3" opacity="0.25"/></svg>');
+}
+
+.phase-row--noon {
+  background: linear-gradient(135deg, rgba(224,247,250,0.9), rgba(129,212,250,0.3));
+}
+.phase-row--noon::before {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="30" r="12" fill="%2300BCD4" opacity="0.3"/><path d="M50,10 L60,25 L75,20 L65,35 L80,45 L60,45 L50,60 L40,45 L20,50 L30,35 L15,25 L40,25 Z" fill="%234CAF50" opacity="0.2"/></svg>');
+}
+
+.phase-row--night {
+  background: linear-gradient(135deg, rgba(237,231,246,0.9), rgba(179,157,219,0.3));
+  border-bottom: none;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+.phase-row--night::before {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="30" cy="30" r="6" fill="%23E1BEE7" opacity="0.4"/><circle cx="70" cy="20" r="4" fill="%23E1BEE7" opacity="0.3"/><circle cx="80" cy="40" r="3" fill="%23E1BEE7" opacity="0.4"/><path d="M50,60 Q40,50 50,40 Q60,50 50,60" fill="%239C27B0" opacity="0.2"/></svg>');
+}
+
+/* ===== 時間帯ラベルボタン（タップで選曲モーダルを開く） ===== */
+.phase-label-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-width: 84px;
+  padding: 0.6rem 0.3rem;
+  border-radius: 12px;
+  border: 2px solid rgba(210,180,140,0.6);
+  background: linear-gradient(145deg, #ffffff, #f0ece6);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+  box-shadow:
+    0 3px 0 0 #C4A882,
+    0 5px 10px rgba(0,0,0,0.1);
+  position: relative;
+  z-index: 1;
+  font-family: 'Zen Maru Gothic', 'Noto Sans JP', sans-serif;
+}
+
+.phase-label-btn:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 0 0 #C4A882,
+    0 3px 6px rgba(0,0,0,0.15);
+}
+
+/* 時間帯ごとの配色 */
+.phase-row--morning .phase-label-btn {
+  background: linear-gradient(145deg, #FFF3E0, #FFE0B2);
+  border-color: rgba(255,152,0,0.6);
+  box-shadow: 0 3px 0 0 #E8A44C, 0 5px 10px rgba(0,0,0,0.1);
+}
+.phase-row--morning .phase-label-btn:active {
+  box-shadow: 0 1px 0 0 #E8A44C, 0 3px 6px rgba(0,0,0,0.15);
+}
+.phase-row--noon .phase-label-btn {
+  background: linear-gradient(145deg, #E1F5FE, #B3E5FC);
+  border-color: rgba(3,169,244,0.6);
+  box-shadow: 0 3px 0 0 #6FB8D9, 0 5px 10px rgba(0,0,0,0.1);
+}
+.phase-row--noon .phase-label-btn:active {
+  box-shadow: 0 1px 0 0 #6FB8D9, 0 3px 6px rgba(0,0,0,0.15);
+}
+.phase-row--night .phase-label-btn {
+  background: linear-gradient(145deg, #F3E5F5, #E1BEE7);
+  border-color: rgba(156,39,176,0.6);
+  box-shadow: 0 3px 0 0 #B48CC4, 0 5px 10px rgba(0,0,0,0.1);
+}
+.phase-row--night .phase-label-btn:active {
+  box-shadow: 0 1px 0 0 #B48CC4, 0 3px 6px rgba(0,0,0,0.15);
+}
+
+/* 再生中の時間帯 */
+.phase-label-btn.playing {
+  border-color: #FFD700;
+  box-shadow:
+    0 3px 0 0 #C9A227,
+    0 5px 10px rgba(0,0,0,0.1),
+    0 0 10px rgba(255,215,0,0.4);
+}
+
+.phase-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #5D4037;
+  text-shadow: 1px 1px 3px rgba(255,255,255,0.8);
+  line-height: 1.1;
+}
+
+/* 停止中は「♪4曲」（選択中の曲数）、再生中は「♪3」（実際の曲番号）。
+   切り替えは ScriptBGM.js 側が行う。 */
+.phase-track {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #8B7355;
+  line-height: 1;
+}
+.phase-label-btn.playing .phase-track { color: #B8860B; }
+
+/* ===== ボタンコンテナ ===== */
+.button-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 0 0 auto;
+}
+
+/* ===== 5分・25分・ループ（時間帯の行に3つ並ぶ） ===== */
+/* 文字数が多いので円形ではなく角丸の可変幅。 */
+.segment-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 20px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  border: 2px solid;
+  white-space: nowrap;
+  position: relative;   /* 朝の行のラベル（::before）の基準 */
+}
+
+/* 5分（休憩のみ）＝昼の配色（ライトブルー）を踏襲 */
+.segment-btn--rest {
+  border-color: #0288D1;
+  background: linear-gradient(145deg, #81D4FA, #4FC3F7);
+  color: #01579B;
+  box-shadow: 0 3px 0 0 #0288D1, 0 5px 10px rgba(0,0,0,0.12);
+}
+
+/* 25分（作業のみ） */
+.segment-btn--work {
+  border-color: #4c1c68;
+  background: linear-gradient(145deg, #eaa3f5, #fbb6fe);
+  color: #4E342E;
+  box-shadow: 0 3px 0 0 #680098, 0 5px 10px rgba(0,0,0,0.12);
+}
+
+/* ループ（作業⇄休憩を繰り返す） */
+.segment-btn--loop {
+  border-color: #2E7D32;
+  background: linear-gradient(145deg, #66BB6A, #43A047);
+  color: #E8F5E9;
+  box-shadow: 0 3px 0 0 #2E7D32, 0 5px 10px rgba(0,0,0,0.12);
+}
+
+/* 押下中／再生中はいずれも共通のゴールドに変化（他のボタンと統一） */
+.segment-btn--rest:active, .segment-btn--rest.active,
+.segment-btn--work:active, .segment-btn--work.active,
+.segment-btn--loop:active, .segment-btn--loop.active {
+  background: linear-gradient(145deg, #FFD700, #FFA000);
+  color: #5D4037;
+  transform: translateY(2px);
+}
+.segment-btn--rest:active, .segment-btn--rest.active {
+  box-shadow: 0 1px 0 0 #0288D1, 0 3px 6px rgba(0,0,0,0.2), inset 0 0 0 2px rgba(255,255,255,0.3);
+}
+.segment-btn--work:active, .segment-btn--work.active {
+  box-shadow: 0 1px 0 0 #EF6C00, 0 3px 6px rgba(0,0,0,0.2), inset 0 0 0 2px rgba(255,255,255,0.3);
+}
+.segment-btn--loop:active, .segment-btn--loop.active {
+  box-shadow: 0 1px 0 0 #2E7D32, 0 3px 6px rgba(0,0,0,0.2), inset 0 0 0 2px rgba(255,255,255,0.3);
+}
+
+/* ---- 朝の行のボタンにだけ、上に小さくラベルを出す（v41） ----
+   昼・夜は同じ並びなので繰り返さない（表の見出しと同じで、1回見れば下も読める）。
+   ::before を使うのは、JS の updateSegmentButtonLabels が textContent を
+   書き換えるため。中身に span を入れると設定変更のたびに消える。 */
+.phase-row--morning .button-group { position: relative; }
+
+.phase-row--morning .segment-btn::before {
+  position: absolute;
+  top: -1.05rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.65rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ラベルの色は各ボタンの枠線と同じにして、どのボタンの見出しかを色でも示す。
+   背景がクリーム色なので、ボタン内の文字色ではなく濃い方（枠線側）を使う。 */
+.phase-row--morning .segment-btn--rest::before { content: '休憩';     color: #0277BD; }
+.phase-row--morning .segment-btn--work::before { content: '作業';     color: #6A1B9A; }
+.phase-row--morning .segment-btn--loop::before { content: '作業→休憩'; color: #2E7D32; }
+
+/* ===== ループ回数調整（±） ===== */
+/* 「ループ回数」の文字を出さない代わりに、±と数字を点線で囲って
+   ひとまとまりであることを示す。回数の意味は「ループ」ボタンとの
+   位置関係で読める。 */
+ /* ===== ループ回数調整（±。各時間帯の行の右端） ===== */
+/* 「回数」という文字は出さず、点線の囲みで ± と数字がひとまとまりだと示す。
+   何の回数かは、隣の「ループ」ボタンとの位置関係で読める。 */
+   .loop-n-adjust {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.6rem;
+    border: 1.5px dashed rgba(46, 93, 52, 0.45);
+    border-radius: 14px;
+    flex: 0 0 auto;
+  }
+
+.loop-n-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid #388E3C;
+  background: linear-gradient(145deg, #A5D6A7, #81C784);
+  color: #1B5E20;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 0 0 #388E3C;
+  transition: all 0.15s ease;
+  text-shadow: 0 1px 1px rgba(255,255,255,0.4);
+  flex: 0 0 auto;
+}
+
+.loop-n-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 0 #388E3C;
+}
+
+.loop-n-display {
+  min-width: 20px;
+  text-align: center;
+  font-weight: 700;
+  color: #5D4037;
+  font-size: 1.05rem;
+}
+@media (max-width: 600px) {
+  .loop-n-btn { width: 28px; height: 28px; font-size: 0.95rem; }
+}
+
+@media (max-width: 480px) {
+  .loop-n-btn { width: 26px; height: 26px; font-size: 0.9rem; }
+  .loop-n-display { font-size: 0.95rem; min-width: 18px; }
+  .loop-n-adjust { padding: 0.3rem 0.45rem; gap: 0.3rem; }
+}
+@media (max-width: 380px) {
+  .loop-n-btn { width: 24px; height: 24px; font-size: 0.85rem; }
+  .loop-n-display { font-size: 0.9rem; }
+  .loop-n-adjust { padding: 0.25rem 0.35rem; }
+}
+
+/* ---- 回数指定ループ専用エリア：夜の下、1行構成 ---- */
+.nloop-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  padding: 0.55rem 0.8rem;
+  margin-top: 0.7rem;
+  background: linear-gradient(135deg, rgba(233, 244, 253, 0.6), rgba(236, 247, 255, 0.6));
+  border: 1.2px dashed rgba(17, 37, 17, 0.4);
+  border-radius: 14px;
+}
+
+.nloop-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.nloop-row .loop-n-adjust { margin-left: 0; }
+
+.nloop-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #2E5D34;
+}
+
+/* ===== 自然音セクション（外枠なし。淡い背景色だけでエリアを示す） ===== */
+.nature-row {
+  background: linear-gradient(135deg, rgba(232,245,233,0.5), rgba(200,230,201,0.25));
+  border-radius: 16px;
+  padding: 0.6rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+}
+
+/* 8個 = 4列×2行で必ず揃うように固定グリッドにする */
+.nature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  justify-items: center;
+}
+
+.nature-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  width: 100%;
+  max-width: 66px;
+  height: 54px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #ffffff, #eef3ee);
+  color: #37474F;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+}
+
+.nature-btn:active { transform: translateY(1px); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+.nature-btn.active {
+  background: linear-gradient(145deg, #66BB6A, #43A047);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(76,175,80,0.35);
+}
+
+/* 線画SVGアイコン。絵文字と違いOS間で見た目が変わらない。 */
+.nature-icon { display: flex; line-height: 0; }
+.nature-icon svg { width: 22px; height: 22px; border-radius: 4px; }
+.nature-label { font-size: 0.55rem; font-weight: 700; }
+
+.nature-volume {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.2rem;
+}
+
+.nature-tag { font-size: 0.8rem; font-weight: 700; color: #2E5D34; letter-spacing: 0.03em; }
+.nature-volume .vol-icon { font-size: 1rem; }
+.nature-volume input[type="range"] { flex: 1; accent-color: #43A047; }
+#nature-volume-value { font-size: 0.8rem; font-weight: 700; color: #2E5D34; min-width: 34px; text-align: right; }
+
+/* ===== 制御ボタンエリア ===== */
+.control-buttons {
+  display: flex;
+  width: 100%;
+  max-width: 580px;
+  margin: 1rem auto 0;
+  gap: 0.5rem;
+}
+
+.control-btn {
+  flex: 1;
+  padding: 1rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  position: relative;
+  overflow: hidden;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  box-shadow:
+    0 3px 0 0 #666,
+    0 5px 12px rgba(0,0,0,0.15);
+}
+
+/* タップの一瞬でも分かるよう、沈み込みに加えて明度を落とす（v41）。 */
+.control-btn:active { filter: brightness(0.78); }
+
+/* 制御ボタンのアイコン（v41）。fill が currentColor なので、
+   ボタンの文字色（一時停止中のゴールド等）に自動で追従する。 */
+.ctrl-icon { display: flex; line-height: 0; }
+.ctrl-icon svg { width: 18px; height: 18px; }
+
+/* ---- 一時停止ボタン ----
+   停止中（無効）＝暗いグレー／再生中（有効）＝明るいグレー。
+   一時停止中は paused クラスが付いてゴールドになる（下記）。 */
+.pause-btn {
+  background: linear-gradient(145deg, #E8E8E8, #C9C9C9);
+  color: #424242;
+  text-shadow: 0 1px 1px rgba(255,255,255,0.6);
+  box-shadow:
+    0 3px 0 0 #9E9E9E,
+    0 5px 12px rgba(0,0,0,0.12);
+}
+.pause-btn:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 0 0 #9E9E9E,
+    0 3px 6px rgba(0,0,0,0.18);
+}
+.pause-btn:disabled {
+  background: linear-gradient(145deg, #8A8A8A, #6E6E6E);
+  color: #D5D5D5;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  box-shadow:
+    0 3px 0 0 #555,
+    0 5px 12px rgba(0,0,0,0.1);
+  cursor: not-allowed;
+  opacity: 0.9;
+}
+
+/* 一時停止中（＝「再開」待ち）はゴールド。押し込まれたままの見た目にして
+   「今ここで止まっている」を示す。クラスは JS が付け外しする。 */
+.pause-btn.paused {
+  background: linear-gradient(145deg, #FFD700, #FFA000);
+  color: #5D4037;
+  text-shadow: 0 1px 1px rgba(255,255,255,0.5);
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 0 0 #B8860B,
+    0 3px 6px rgba(0,0,0,0.2),
+    inset 0 0 0 2px rgba(255,255,255,0.3);
+}
+
+/* ---- 全ループボタン ---- */
+.play-all-btn {
+  background: linear-gradient(145deg, #66BB6A, #4CAF50);
+  box-shadow:
+    0 3px 0 0 #388E3C,
+    0 5px 12px rgba(0,0,0,0.15);
+}
+.play-all-btn:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 0 0 #388E3C,
+    0 3px 6px rgba(0,0,0,0.2);
+}
+.play-all-btn.active {
+  background: linear-gradient(145deg, #FFD700, #FFA000);
+  color: #5D4037;
+  box-shadow:
+    0 3px 0 0 #388E3C,
+    0 5px 12px rgba(0,0,0,0.15),
+    inset 0 0 0 2px rgba(255,255,255,0.3);
+}
+
+/* ---- 全て停止ボタン ----
+   影の色は背景の青紫に合わせてある（以前は赤系の値が残っていた）。 */
+.stop-all-btn {
+  background: linear-gradient(145deg, #4b67e5, #5b54df);
+  box-shadow:
+    0 3px 0 0 #2f3a9e,
+    0 5px 12px rgba(0,0,0,0.15);
+}
+.stop-all-btn:active {
+  transform: translateY(2px);
+  background: linear-gradient(145deg, #3a52c4, #4740b8);
+  box-shadow:
+    0 1px 0 0 #2f3a9e,
+    0 3px 6px rgba(0,0,0,0.2),
+    inset 0 0 0 2px rgba(255,255,255,0.25);
+}
+
+/* ===== 設定ボタン（横長1行） ===== */
+.settings-section {
+  width: 100%;
+  max-width: 580px;
+  margin: 0 auto;
+  padding: 0 0.5rem;
+}
+
+.settings-btn {
+  width: 100%;
+  justify-content: center;
+  background: linear-gradient(145deg, #8d94a6, #8d94a6);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.8rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow:
+    0 3px 0 0 #616161,
+    0 5px 10px rgba(0,0,0,0.12);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.settings-btn:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 0 0 #616161,
+    0 3px 6px rgba(0,0,0,0.15);
+}
+
+/* ===== 横長広告スペース ===== */
+.ad-space-horizontal {
+  width: 100%;
+  max-width: 580px;
+  margin: 0 auto;
+  flex: 1;
+  min-height: 50px;
+  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* =====================================================================
+   モーダル共通（設定・選曲）
+   既存のデザイン言語を踏襲：D2B48C 枠、クリーム系グラデ、丸角16px
+   選曲モーダルも同じクラス（settings-overlay / settings-modal）を使う。
+===================================================================== */
+
+.settings-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(50, 40, 30, 0.45);
+  backdrop-filter: blur(3px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+
+.settings-overlay.open { display: flex; }
+
+.settings-modal {
+  width: 100%;
+  max-width: 520px;
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(145deg, #fdfcfa, #f3efe9);
+  border: 3px solid #D2B48C;
+  border-radius: 16px;
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.3),
+    inset 0 1px 3px rgba(255,255,255,0.8);
+  overflow: hidden;
+  animation: modalIn 0.25s ease-out;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-modal { animation: none; }
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.2rem;
+  background: linear-gradient(135deg, rgba(255,243,224,0.9), rgba(245,240,232,0.9));
+  border-bottom: 2px solid rgba(210,180,140,0.6);
+}
+
+.settings-header h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #5D4037;
+  text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+}
+
+.settings-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid #8B4513;
+  background: linear-gradient(145deg, #D2B48C, #C19A6B);
+  color: #5D4037;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 0 0 #8B4513;
+  transition: all 0.15s ease;
+}
+
+.settings-close:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 0 #8B4513;
+}
+
+.settings-body {
+  overflow-y: auto;
+  padding: 1rem 1.2rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.settings-group {
+  background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(248,245,241,0.9));
+  border: 2px solid rgba(210,180,140,0.6);
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+  box-shadow:
+    0 4px 12px rgba(0,0,0,0.06),
+    inset 0 1px 2px rgba(255,255,255,0.7);
+}
+
+.settings-group-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #5D4037;
+  margin-bottom: 0.7rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px dashed rgba(210,180,140,0.7);
+  text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.45rem 0;
+}
+
+.setting-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #5D4037;
+  flex: 0 0 auto;
+}
+
+.setting-slider {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  max-width: 220px;
+}
+.setting-slider input[type="range"] { flex: 1; accent-color: #D4AF37; }
+.setting-slider--nature input[type="range"] { accent-color: #43A047; }
+.setting-value {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #8B4513;
+  min-width: 34px;
+  text-align: right;
+}
+
+.setting-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.setting-num {
+  min-width: 52px;
+  text-align: center;
+  font-weight: 700;
+  color: #5D4037;
+  font-size: 0.95rem;
+}
+
+.setting-num--wide { min-width: 64px; }
+
+.setting-check {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #5D4037;
+  user-select: none;
+}
+.setting-check input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: #D4AF37;
+  cursor: pointer;
+}
+
+.setting-note {
+  font-size: 0.72rem;
+  color: #8B7355;
+  margin-top: 0.4rem;
+  line-height: 1.5;
+}
+
+/* ===== 選曲モーダルの中身（v40） ===== */
+/* 作業曲＝チェックボックス（複数）、休憩曲＝ラジオ（1曲）。
+   この非対称が仕様の表明になっている。 */
+.track-list {
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding-right: 0.2rem;
+  font-size: 0.8rem;
+  color: #8B7355;
+}
+
+.track-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(210,180,140,0.35);
+  cursor: pointer;
+  user-select: none;
+}
+
+.track-row input { width: 18px; height: 18px; accent-color: #D4AF37; cursor: pointer; flex: 0 0 auto; }
+.track-row-label { font-size: 0.82rem; font-weight: 700; color: #5D4037; flex: 0 0 auto; }
+.track-row-file {
+  font-size: 0.7rem;
+  color: #8B7355;
+  margin-left: auto;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track-actions { display: flex; gap: 0.4rem; margin-top: 0.5rem; }
+
+/* ===== クレジット一覧 ===== */
+.credits-list {
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding-right: 0.2rem;
+}
+
+.credit-phase {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #8B4513;
+  margin-bottom: 0.15rem;
+}
+
+.credit-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(210,180,140,0.35);
+  margin-bottom: 0.25rem;
+}
+
+.credit-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #5D4037;
+}
+
+.credit-artist {
+  font-size: 0.72rem;
+  color: #8B7355;
+  text-align: right;
+}
+
+.credit-artist a {
+  color: #B8860B;
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 1px dotted #B8860B;
+}
+.credit-artist a:hover { border-bottom-style: solid; }
+
+/* ===== 応援・リセットボタン ===== */
+.support-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 12px;
+  border: 2px solid #B8860B;
+  background: linear-gradient(145deg, #FFD700, #FFA000);
+  color: #5D4037;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow:
+    0 3px 0 0 #B8860B,
+    0 5px 10px rgba(0,0,0,0.12);
+  transition: all 0.15s ease;
+  text-shadow: 0 1px 1px rgba(255,255,255,0.5);
+}
+.support-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 0 #B8860B, 0 3px 6px rgba(0,0,0,0.15);
+}
+
+.reset-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  border: 2px solid #757575;
+  background: linear-gradient(145deg, #E0E0E0, #BDBDBD);
+  color: #424242;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 0 0 #757575, 0 5px 10px rgba(0,0,0,0.1);
+  transition: all 0.15s ease;
+}
+.reset-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 0 #757575, 0 3px 6px rgba(0,0,0,0.12);
+}
+
+.app-info {
+  border-top: 1px dashed rgba(210,180,140,0.7);
+  padding-top: 0.5rem;
+}
+
+/* ===== アニメーション効果 ===== */
+.timer-display.active #timer-remaining { animation: pulse 2s infinite; }
+.timer-display.paused #timer-remaining { animation: blink 1s infinite; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.02); }
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.6; }
+}
+
+.phase-row { animation: slideIn 0.6s ease-out backwards; }
+.phase-row:nth-child(1) { animation-delay: 0.1s; }
+.phase-row:nth-child(2) { animation-delay: 0.2s; }
+.phase-row:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =====================================================================
+   レスポンシブ対応
+===================================================================== */
+
+@media (max-width: 600px) {
+  body { border-width: 6px; border-radius: 20px; }
+  .timer-display { margin: 0.8rem auto; padding: 1.5rem 1.2rem; max-width: 500px; }
+  #timer-remaining { font-size: 2.8rem; }
+  #timer-status { font-size: 1rem; }
+  .phase-row { padding: 0.8rem 1rem; gap: 0.8rem; }
+  .phase-row--morning { padding-top: 1.5rem; }
+  .phase-name { font-size: 1rem; }
+  .segment-btn { font-size: 0.8rem; padding: 0.45rem 0.65rem; }
+  .loop-n-btn { width: 32px; height: 32px; font-size: 1rem; }
+  .control-btn { font-size: 0.9rem; padding: 0.8rem 1rem; }
+  .settings-btn { font-size: 0.8rem; padding: 0.7rem 1.2rem; }
+  .ad-space-horizontal { min-height: 55px; font-size: 0.75rem; }
+}
+
+@media (max-width: 480px) {
+  body { border-width: 4px; border-radius: 15px; }
+  .timer-display { margin: 0.6rem auto; padding: 1.2rem 1rem; max-width: 95%; }
+  #timer-remaining { font-size: 2.5rem; }
+  #timer-status { font-size: 0.9rem; }
+  #btnGrid { gap: 0.8rem; padding: 0 0.5rem; }
+  .phase-row { padding: 0.6rem 0.7rem; gap: 0.5rem; }
+  .phase-row--morning { padding-top: 1.4rem; }
+  .phase-label-btn { min-width: 56px; padding: 0.4rem 0.7rem; }
+  .phase-name { font-size: 0.95rem; }
+  .phase-track { font-size: 0.6rem; }
+  .button-group { min-width: auto; gap: 0.4rem; }
+  .segment-btn { font-size: 0.72rem; padding: 0.4rem 0.55rem; }
+  .loop-n-btn { width: 30px; height: 30px; font-size: 0.95rem; }
+  .loop-n-display { font-size: 1.05rem; }
+  .nloop-section { padding: 0.5rem 0.6rem; gap: 0.5rem; }
+  .control-buttons { margin: 0.8rem auto 0; gap: 0.4rem; }
+  .control-btn { font-size: 0.8rem; padding: 0.7rem 0.8rem; gap: 0.3rem; }
+  .ctrl-icon svg { width: 16px; height: 16px; }
+  .settings-btn { font-size: 0.8rem; padding: 0.7rem 1rem; }
+  .ad-space-horizontal { min-height: 50px; font-size: 0.7rem; width: 100%; }
+  .nature-btn { height: 48px; }
+  .nature-icon svg { width: 19px; height: 19px; }
+  .nature-label { font-size: 0.5rem; }
+
+  /* モーダル（狭幅） */
+  .settings-modal { max-height: 90vh; }
+  .setting-item { flex-wrap: wrap; }
+  .setting-slider { max-width: none; width: 100%; }
+  .settings-body { padding: 0.8rem; }
+}
+
+/* ===== 極小画面対応（5.5インチ以下） ===== */
+@media (max-width: 380px) {
+  .timer-display { margin: 0.5rem auto; padding: 0.8rem; }
+  #timer-remaining { font-size: 2rem; }
+  #timer-status { font-size: 0.8rem; }
+  .phase-label-btn { min-width: 50px; padding: 0.35rem 0.55rem; }
+  .phase-name { font-size: 0.9rem; }
+  .phase-track { font-size: 0.56rem; }
+  .segment-btn { font-size: 0.68rem; padding: 0.35rem 0.5rem; }
+  .loop-n-btn { width: 28px; height: 28px; font-size: 0.9rem; }
+  .control-btn { font-size: 0.75rem; padding: 0.6rem 0.6rem; }
+  .ctrl-icon svg { width: 15px; height: 15px; }
+  .settings-btn { font-size: 0.7rem; padding: 0.5rem 0.8rem; }
+  .ad-space-horizontal { min-height: 45px; font-size: 0.65rem; }
+}

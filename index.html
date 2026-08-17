@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BGM タイマー</title>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="BGMstyle.css" />
+</head>
+<body>
+  <!-- ***** 残り時間表示 ***** -->
+<div class="">
+
+  <div class="timer-display" id="timer-display">
+    <span id="timer-remaining">--:--</span>
+    <span id="timer-status">待機中</span>
+  </div>
+
+  <!-- ***** ボタンエリア ***** -->
+  <div id="btnGrid">
+    <!-- ===== BGM グループ（朝・昼・夜・音量） ===== -->
+    <div class="bgm-section">
+
+    <!-- ===== 朝 ===== -->
+    <div class="phase-row phase-row--morning">
+        <button class="phase-label-btn" onclick="openTrackSelect('morning')" data-phase="morning" title="タップで曲を選ぶ">
+        <span class="phase-name">朝</span>
+        <span class="phase-track" id="morning-track">♪1</span>
+      </button>
+      <div class="button-group">
+        <button class="segment-btn segment-btn--rest timer-action-btn" onclick="startRestOnly('morning', this)" title="休憩曲だけを再生">5分</button>
+        <button class="segment-btn segment-btn--work timer-action-btn" onclick="startWorkOnly('morning', this)" title="作業曲だけを再生">25分</button>
+        <button class="segment-btn segment-btn--loop timer-action-btn" onclick="startLoopSet('morning', loopCounts.morning, this)" title="作業⇄休憩を指定回数繰り返す">ループ</button>
+        <div class="loop-n-adjust">
+          <button class="loop-n-btn" onclick="adjustLoopCount('morning', -1)">−</button>
+          <span class="loop-n-display" id="morning-loop-n">2</span>
+          <button class="loop-n-btn" onclick="adjustLoopCount('morning', 1)">＋</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 昼 ===== -->
+    <div class="phase-row phase-row--noon">
+      <button class="phase-label-btn" onclick="openTrackSelect('noon')" data-phase="noon" title="タップで曲を選ぶ">
+        <span class="phase-name">昼</span>
+        <span class="phase-track" id="noon-track">♪1</span>
+      </button>
+      <div class="button-group">
+        <button class="segment-btn segment-btn--rest timer-action-btn" onclick="startRestOnly('noon', this)" title="休憩曲だけを再生">5分</button>
+        <button class="segment-btn segment-btn--work timer-action-btn" onclick="startWorkOnly('noon', this)" title="作業曲だけを再生">25分</button>
+        <button class="segment-btn segment-btn--loop timer-action-btn" onclick="startLoopSet('noon', loopCounts.noon, this)" title="作業⇄休憩を指定回数繰り返す">ループ</button>
+        <div class="loop-n-adjust">
+          <button class="loop-n-btn" onclick="adjustLoopCount('noon', -1)">−</button>
+          <span class="loop-n-display" id="noon-loop-n">2</span>
+          <button class="loop-n-btn" onclick="adjustLoopCount('noon', 1)">＋</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 夜 ===== -->
+    <div class="phase-row phase-row--night">
+      <button class="phase-label-btn" onclick="openTrackSelect('night')" data-phase="night" title="タップで曲を選ぶ">
+        <span class="phase-name">夜</span>
+        <span class="phase-track" id="night-track">♪1</span>
+      </button>
+      <div class="button-group">
+        <button class="segment-btn segment-btn--rest timer-action-btn" onclick="startRestOnly('night', this)" title="休憩曲だけを再生">5分</button>
+        <button class="segment-btn segment-btn--work timer-action-btn" onclick="startWorkOnly('night', this)" title="作業曲だけを再生">25分</button>
+        <button class="segment-btn segment-btn--loop timer-action-btn" onclick="startLoopSet('night', loopCounts.night, this)" title="作業⇄休憩を指定回数繰り返す">ループ</button>
+        <div class="loop-n-adjust">
+          <button class="loop-n-btn" onclick="adjustLoopCount('night', -1)">−</button>
+          <span class="loop-n-display" id="night-loop-n">2</span>
+          <button class="loop-n-btn" onclick="adjustLoopCount('night', 1)">＋</button>
+        </div>
+      </div>
+    </div>
+ 
+     <!-- 制御ボタン -->
+     <div class="control-buttons">
+      <button id="pause-all" class="control-btn pause-btn" onclick="pauseTimer()" disabled>
+        <span class="ctrl-icon"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="4.5" width="4" height="15" rx="1.2"/><rect x="13.5" y="4.5" width="4" height="15" rx="1.2"/></svg></span>
+        <span>一時停止</span>
+      </button>
+      <button id="play-all" class="control-btn play-all-btn" onclick="startContinuousLoop()">
+        <span class="ctrl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-13.7-5.6L3.5 8"/><path d="M3.5 4.2V8H7.3"/><path d="M4 13a8 8 0 0 0 13.7 5.6l2.8-2.6"/><path d="M20.5 19.8V16h-3.8"/></svg></span>
+        <span>全ループ</span>
+      </button>
+      <button id="stop-all" class="control-btn stop-all-btn" onclick="stopAllTimers()">
+        <span class="ctrl-icon"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></span>
+        <span>全て停止</span>
+      </button>
+    </div>
+    
+    <!--　BGM 音量バー（Nループ欄の下・横長）　-->
+    <div class="volume-section">
+      <span class="nature-tag">BGM</span>
+
+      <span class="vol-icon">🔊</span>
+      <input type="range" id="volume-slider" min="0" max="100" value="70"
+             oninput="setVolume(this.value / 100)" />
+      <span id="volume-value">70%</span>
+    </div>
+    </div>
+  
+    <!-- ===== 自然音（重ねがけ・独立音量） ===== -->
+    <div class="nature-row">
+      <div class="nature-grid">
+        <button class="nature-btn" onclick="toggleNature('river', this)" title="川の音">
+          <span class="nature-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(-22 12 12)"><path stroke="#90CAF9" d="M2 6c1.7-2.6 3.3-2.6 5 0s3.3 2.6 5 0 3.3-2.6 5 0 3.3 2.6 5 0"/><path stroke="#42A5F5" d="M2 12c1.7-2.6 3.3-2.6 5 0s3.3 2.6 5 0 3.3-2.6 5 0 3.3 2.6 5 0"/><path stroke="#1565C0" d="M2 18c1.7-2.6 3.3-2.6 5 0s3.3 2.6 5 0 3.3-2.6 5 0 3.3 2.6 5 0"/></g></svg></span>
+          <span class="nature-label">川</span>
+        </button>
+        <button class="nature-btn" onclick="toggleNature('waterfall', this)" title="滝の音">
+          <span class="nature-icon"><svg viewBox="0 0 24 24"><path fill="#42A5F5" d="M8 2H16V18H8Z"/><path fill="#90CAF9" fill-opacity="0.7" d="M9 2H10.6V18H9Z"/><path fill="#ffffff" d="M6 18Q7 16.3 8 18Q9 16.3 10 18Q11 16.3 12 18Q13 16.3 14 18Q15 16.3 16 18Q17 16.3 18 18L18 21Q12 23.2 6 21Z"/></svg></span>
+          <span class="nature-label">滝</span>
+        </button>
+        <button class="nature-btn" onclick="toggleNature('waves', this)" title="波の音">
+          <span class="nature-icon"><svg viewBox="0 0 24 24"><path fill="#81D4FA" d="M0 0H24V13Q21 16 18 13Q15 10 12 13Q9 16 6 13Q3 10 0 13Z"/><path fill="#EAD3A3" d="M0 13Q3 10 6 13Q9 16 12 13Q15 10 18 13Q21 16 24 13L24 24L0 24Z"/><path fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M0 13Q3 10 6 13Q9 16 12 13Q15 10 18 13Q21 16 24 13"/></svg></span>
+          <span class="nature-label">波</span>
+        </button>
+        <button class="nature-btn" onclick="toggleNature('campfire', this)" title="焚き火の音">
+          <span class="nature-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path stroke="#FB8C00" fill="#FFB74D" fill-opacity="0.35" d="M12 3c2 4-2 5-1 9 1-1 2-2 2-4 2 2 3 5 1 7.5-2.5 3-7 2-7.5-1.5-.3-2 .5-3.5 1.5-5-1 1-2 3-2 5a6 6 0 0 0 12 0c0-6-5-8-6-12z"/><path stroke="#6D4C41" d="M3 21h18"/></svg></span>
+          <span class="nature-label">焚き火</span>
+        </button>
+        <button class="nature-btn" onclick="toggleNature('insects', this)" title="虫の声">
+          <span class="nature-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path stroke="#558B2F" d="M6 10.5C4 7.5 2.5 4.5 1.5 2"/><path stroke="#558B2F" d="M7.3 10.2C6 7 5.7 4 6.3 1.5"/><circle cx="6.3" cy="12" r="1.6" fill="#8BC34A" fill-opacity="0.5" stroke="#558B2F"/><path stroke="#689F38" fill="#AED581" fill-opacity="0.45" d="M6.8 11.3Q10 8.8 14 9.2Q19 9.6 20.5 13Q19 16.2 14 16.4Q10 16.4 6.8 13.7Z"/><path stroke="#558B2F" d="M9.2 9.6Q14 8.6 19.3 10.6"/><path stroke="#558B2F" d="M8.3 14.8L7 18"/><path stroke="#558B2F" d="M12.5 15.8L11.8 19"/><path stroke="#558B2F" d="M17 14.3C19.3 15.5 20.3 17.3 19.3 19.8"/><path stroke="#558B2F" d="M19.3 19.8L21.5 18.7"/></svg></span>
+          <span class="nature-label">虫の声</span>
+        </button>
+        <button class="nature-btn" onclick="toggleNature('higurashi', this)" title="ひぐらしの声">
+          <span class="nature-icon"><svg viewBox="0 0 24 24"><path fill="#B89B7D" d="M0 0H10.7V24H0Z"/><path fill="#7C8F5A" stroke="#C9A227" stroke-width="0.9" d="M9.3 9.5Q7.9 14.5 9.5 20.3Q10.7 21.8 12.1 20.3Q13.7 14.5 12.3 9.5Q10.7 8.3 9.3 9.5Z"/><path fill="#7C8F5A" fill-opacity="0.8" stroke="#C9A227" stroke-width="0.8" d="M11 10.3Q17 13.3 14 22Q11.9 20.5 11.1 15.3Z"/><path fill="none" stroke="#C9A227" stroke-width="0.7" stroke-linecap="round" d="M9.7 12.5Q8.3 12.65 7.8 12"/><path fill="none" stroke="#C9A227" stroke-width="0.7" stroke-linecap="round" d="M9.6 15.3Q7.9 15.5 7.5 16.2"/><path fill="none" stroke="#C9A227" stroke-width="0.8" stroke-linecap="round" d="M9.9 17.8Q8.5 18.5 8.3 19.8"/><circle cx="10.3" cy="9.3" r="1.5" fill="#7C8F5A" stroke="#C9A227" stroke-width="0.9"/></svg></span>
+          <span class="nature-label">ひぐらし</span>
+        </button>
+        <button class="nature-btn" onclick="toggleNature('windchime', this)" title="風鈴の音">
+          <span class="nature-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path stroke="#8D6E63" d="M9 3.5h6"/><path stroke="#C9A227" fill="#FFD54F" fill-opacity="0.35" d="M8 4.5h8l1 6.2a5 5 0 0 1-10 0z"/><path stroke="#8D6E63" d="M12 10.7v3.3"/><path stroke="#EF5350" d="M12 14l-1.6 6.5h3.2z"/></svg></span>
+          <span class="nature-label">風鈴</span>
+        </button>
+        <button class="nature-btn" onclick="toggleNature('rain', this)" title="雨の音">
+          <span class="nature-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path stroke="#78909C" fill="#CFD8DC" fill-opacity="0.5" d="M6.5 11a4 4 0 0 1 7.3-2.2A3.7 3.7 0 0 1 18 12.3c0 .1 0 .3 0 .4H7.3A4 4 0 0 1 6.5 11z"/><path stroke="#42A5F5" d="M8.5 16.5L7 20M12.5 16.5L11 20M16.5 16.5L15 20"/></svg></span>
+          <span class="nature-label">雨</span>
+        </button>
+      </div>
+      <div class="nature-volume">
+        <span class="nature-tag">Nature</span>
+        <span class="vol-icon">🔊</span>
+        <input type="range" id="nature-volume-slider" min="0" max="100" value="50"
+               oninput="setNatureVolume(this.value / 100)" />
+        <span id="nature-volume-value">50%</span>
+      </div>
+    </div>
+
+    <!-- 設定ボタンと横長広告 -->
+<!-- 設定ボタン（横長1行）と横長広告 -->
+<div class="settings-section">
+  <button class="settings-btn" onclick="openSettings()">
+    <span>⚙️</span>
+    <span>設定</span>
+  </button>
+</div>
+
+<div class="ad-space-horizontal">
+  <span>横長広告スペース</span>
+</div>
+
+</div>
+
+<!-- ***** 選曲モーダル v40 ***** -->
+<div class="settings-overlay" id="track-select-overlay">
+  <div class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="track-select-title">
+    <div class="settings-header">
+      <h2 id="track-select-title">🎵 曲を選ぶ</h2>
+      <button class="settings-close" onclick="closeTrackSelect()" title="閉じる">×</button>
+    </div>
+
+    <div class="settings-body">
+      <section class="settings-group">
+        <h3 class="settings-group-title">作業曲（複数選べます）</h3>
+        <div class="track-list" id="track-work-list"></div>
+        <div class="track-actions">
+          <button class="reset-btn" onclick="selectAllWorkTracks()">すべて選ぶ</button>
+        </div>
+        <p class="setting-note">選んだ曲を、作業時間で均等に分けて順に流します。最低1曲は残ります。</p>
+      </section>
+
+      <section class="settings-group">
+        <h3 class="settings-group-title">休憩曲（1曲だけ）</h3>
+        <div class="track-list" id="track-rest-list"></div>
+        <p class="setting-note">休憩曲は切り替えの合図として働くよう、1曲を固定して鳴らします。</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+  <!-- ***** 設定モーダル ***** -->
+  <div class="settings-overlay" id="settings-overlay">
+    <div class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div class="settings-header">
+        <h2 id="settings-title">⚙️ 設定</h2>
+        <button class="settings-close" onclick="closeSettings()" title="閉じる">×</button>
+      </div>
+
+      <div class="settings-body">
+
+        <!-- ===== 再生設定 ===== -->
+        <section class="settings-group">
+          <h3 class="settings-group-title">再生設定</h3>
+
+          <div class="setting-item">
+            <span class="setting-label">BGM音量（起動時）</span>
+            <div class="setting-slider">
+              <input type="range" id="set-bgm-vol" min="0" max="100" value="70"
+                     oninput="onSettingBgmVol(this.value)" />
+              <span class="setting-value" id="set-bgm-vol-val">70%</span>
+            </div>
+          </div>
+
+          <div class="setting-item">
+            <span class="setting-label">自然音音量（起動時）</span>
+            <div class="setting-slider setting-slider--nature">
+              <input type="range" id="set-nature-vol" min="0" max="100" value="50"
+                     oninput="onSettingNatureVol(this.value)" />
+              <span class="setting-value" id="set-nature-vol-val">50%</span>
+            </div>
+          </div>
+
+          <div class="setting-item">
+            <span class="setting-label">作業時間</span>
+            <div class="setting-stepper">
+              <button class="loop-n-btn" onclick="adjustWorkMin(-5)">−</button>
+              <span class="setting-num" id="set-work-min">25分</span>
+              <button class="loop-n-btn" onclick="adjustWorkMin(5)">＋</button>
+            </div>
+          </div>
+
+          <div class="setting-item">
+            <span class="setting-label">休憩時間</span>
+            <div class="setting-stepper">
+              <button class="loop-n-btn" onclick="adjustRestMin(-1)">−</button>
+              <span class="setting-num" id="set-rest-min">5分</span>
+              <button class="loop-n-btn" onclick="adjustRestMin(1)">＋</button>
+            </div>
+          </div>
+
+          <div class="setting-item">
+            <span class="setting-label">曲のクロスフェード</span>
+            <div class="setting-stepper">
+              <button class="loop-n-btn" onclick="adjustFadeSec(-0.5)">−</button>
+              <span class="setting-num" id="set-fade-sec">1.5秒</span>
+              <button class="loop-n-btn" onclick="adjustFadeSec(0.5)">＋</button>
+            </div>
+          </div>
+
+          <div class="setting-item">
+            <span class="setting-label">BGM再生スピード</span>
+            <div class="setting-stepper">
+              <button class="loop-n-btn" onclick="adjustSpeed(-0.05)">−</button>
+              <span class="setting-num setting-num--wide" id="set-speed">1.00倍</span>
+              <button class="loop-n-btn" onclick="adjustSpeed(0.05)">＋</button>
+            </div>
+          </div>
+
+          <div class="setting-item">
+            <span class="setting-label">タイマー終了音</span>
+            <label class="setting-check">
+              <input type="checkbox" id="set-end-sound" checked
+                     onchange="onToggleEndSound(this.checked)" />
+              <span>鳴らす</span>
+            </label>
+          </div>
+
+          <p class="setting-note">作業・休憩時間の変更は、次の区間から反映されます。スピードは自然音には適用されません。</p>
+        </section>
+
+        <!-- ===== 曲リスト・クレジット ===== -->
+        <section class="settings-group">
+          <h3 class="settings-group-title">曲リスト・クレジット</h3>
+          <div class="credits-list" id="credits-list">
+            <!-- ScriptBGM.js の CREDITS から自動生成 -->
+          </div>
+        </section>
+
+        <!-- ===== その他 ===== -->
+        <section class="settings-group">
+          <h3 class="settings-group-title">その他</h3>
+
+          <div class="setting-item">
+            <span class="setting-label">作者を応援する</span>
+            <a class="support-btn" id="support-btn" href="#" target="_blank" rel="noopener"
+               onclick="return onSupportClick(event)">☕ 応援ページへ</a>
+          </div>
+
+          <div class="setting-item">
+            <span class="setting-label">設定を初期値に戻す</span>
+            <button class="reset-btn" onclick="resetSettings()">リセット</button>
+          </div>
+
+          <p class="setting-note app-info">BGMタイマー v43 ／ 設定はこの端末（ブラウザ）にのみ保存されます。</p>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="ScriptBGM.js"></script>
+</body>
+</html>
