@@ -1,6 +1,5 @@
 // 異世界BGM25Timer - ScriptBGM.js
 // =====================================================================
-
 // ---- 時間帯の定義（他の多くの処理がこれを参照するので最初に置く） ----
 const PHASES = ['morning', 'noon', 'night'];
 const PHASE_BY_LABEL = { '朝': 'morning', '昼': 'noon', '夜': 'night' };
@@ -373,9 +372,30 @@ const TM = {
 
 let activeButton = null;
 
+// =====
+// iphoneにて連続再生されなかったので仕様変更
+// =====
+const audioPool = [new Audio(), new Audio(), new Audio()];
+let poolIndex = 0;
+function takeAudio() {
+  const a = audioPool[poolIndex];
+  poolIndex = (poolIndex + 1) % audioPool.length;
+  return a;
+}
+
+let unlocked = false;
+function unlock() {
+  if (unlocked) return;
+  unlocked = true;
+  audioPool.forEach(a => {
+    a.play().then(() => a.pause()).catch(() => {});
+  });
+}
+
 // =====================================================================
 // 音楽再生（クロスフェード層）
 // =====================================================================
+
 
 let fadeTimer = null;        // 進行中フェードの interval ID
 let retiringAudios = [];     // フェードアウト中の旧トラック（複数保持できる）
@@ -416,15 +436,19 @@ function playAudioFile(file) {
       }
     });
     newAudio.play()
-      .then(() => console.log(`再生開始: ${file}`))
-      .catch((err) => console.error('音楽再生エラー:', err));
-  } catch (err) {
-    console.error('音楽再生の初期化エラー:', err);
-    return;
-  }
-
+    .then(() => {
+      console.log('再生開始', file, newAudio.paused, newAudio.volume);
+    })
+    .catch((err) => console.error('音楽再生エラー:', err));
+    } 
+    catch (err) {
+      console.error('音楽再生の初期化エラー:', err);
+      return;
+    }
+  
   currentAudio = newAudio;
   startCrossfade();
+
 }
 
 function startCrossfade() {
