@@ -396,6 +396,13 @@ function unlock() {
 // 音楽再生（クロスフェード層）
 // =====================================================================
 
+// iphoneのテスト用　終わったら消す
+const _log = console.log;
+console.log = (...a) => {
+  _log(...a);
+  const d = document.getElementById('dbg');
+  if (d) d.textContent = a.join(' ') + '\n' + d.textContent.slice(0, 500);
+};
 
 let fadeTimer = null;        // 進行中フェードの interval ID
 let retiringAudios = [];     // フェードアウト中の旧トラック（複数保持できる）
