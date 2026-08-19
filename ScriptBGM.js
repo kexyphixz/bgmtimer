@@ -1077,7 +1077,14 @@ function pauseTimer() {
 
 function resumeTimer() {
   if (TM.status === 'paused') {
-    if (currentAudio) currentAudio.play().catch((e) => console.error('再開エラー:', e));
+//　2026/08/19 11:50ごろ　再開エラー対処
+    if (currentAudio) {
+      currentAudio.play().catch(() => {
+        currentAudio.load();
+        currentAudio.play().catch((e) => console.error('再開エラー:', e));
+      });
+    }
+    //
     startCountdown();
     updateControlButtons();
   } else if (TM.status === 'paused_gap') {
