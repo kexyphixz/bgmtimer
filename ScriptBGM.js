@@ -32,10 +32,10 @@ const ARTISTS = {
 
 const TRACK_CREDITS = {
   //朝　作業
-  'morning/Sur-les-Paves-de-Strahlburg.mp3': ARTISTS.a,
-  'morning/テラス・カリスティア.mp3': ARTISTS.a,
-  'morning/冒険日和！.mp3': ARTISTS.a,
-  'morning/いざ、素材蒐集！.mp3': ARTISTS.a,
+  'morning/morning1.mp3': ARTISTS.a,
+  'morning/morning2.mp3': ARTISTS.a,
+  'morning/morning3.mp3': ARTISTS.a,
+  'morning/morning4.mp3': ARTISTS.a,
   //朝　休憩
   'morningrest/Reposons-un-Peu.mp3': ARTISTS.a,
   'morningrest/涼風のシュトラールブルク.mp3': ARTISTS.a,
