@@ -105,7 +105,7 @@ body {
 .volume-section input[type="range"] { flex: 1; accent-color: #D4AF37; }
 #volume-value { font-size: 0.8rem; font-weight: 700; color: #8B4513; min-width: 34px; text-align: right; }
 
-/* ===== 各時間帯の行（枠なし・隙間なし。境目は下線1本だけ） ===== */
+/* ===== 各時間帯の行（枠なし・隙間なし。境目は下線1本だけ）v44特殊環境での画面はみ出しを修正 ===== */
 .phase-row {
   padding: 1rem 0.2rem;
   display: flex;
@@ -113,7 +113,7 @@ body {
   justify-content: center;
   gap: 0.99rem;
   position: relative;
-  overflow: hidden;
+  flex-wrap: wrap;
   border-bottom: 1px solid rgba(0,0,0,0.08);
 }
 
@@ -136,9 +136,12 @@ body {
   border-top-right-radius: 16px;
   padding-top: 1.6rem;
 }
+
 .phase-row--morning::before {
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="55" r="14" fill="%23FF9800" opacity="0.25"/><path d="M20,55 L80,55" stroke="%23FFB74D" stroke-width="3" opacity="0.3"/><path d="M50,30 L50,20 M30,40 L23,33 M70,40 L77,33" stroke="%23FF9800" stroke-width="3" opacity="0.25"/></svg>');
 }
+
+.phase-row--morning .button-group { margin-top: 0.6rem; }
 
 .phase-row--noon {
   background: linear-gradient(135deg, rgba(224,247,250,0.9), rgba(129,212,250,0.3));
@@ -327,6 +330,7 @@ body {
   pointer-events: none;
 }
 
+.phase-row--morning { padding-top: 2.2rem; }
 /* ラベルの色は各ボタンの枠線と同じにして、どのボタンの見出しかを色でも示す。
    背景がクリーム色なので、ボタン内の文字色ではなく濃い方（枠線側）を使う。 */
 .phase-row--morning .segment-btn--rest::before { content: '休憩';     color: #0277BD; }
@@ -337,10 +341,10 @@ body {
 /* 「ループ回数」の文字を出さない代わりに、±と数字を点線で囲って
    ひとまとまりであることを示す。回数の意味は「ループ」ボタンとの
    位置関係で読める。 */
- /* ===== ループ回数調整（±。各時間帯の行の右端） ===== */
+/* ===== ループ回数調整（±。各時間帯の行の右端） ===== */
 /* 「回数」という文字は出さず、点線の囲みで ± と数字がひとまとまりだと示す。
    何の回数かは、隣の「ループ」ボタンとの位置関係で読める。 */
-   .loop-n-adjust {
+  .loop-n-adjust {
     display: flex;
     align-items: center;
     gap: 0.4rem;

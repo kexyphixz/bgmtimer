@@ -374,6 +374,8 @@ let activeButton = null;
 
 // =====
 // iphoneにて連続再生されなかったので仕様変更
+// iOS Safari は new Audio() のたびにファイルを再取得するため、
+// 要素を固定で持って src を差し替える方式にする。
 // =====
 const audioPool = [new Audio(), new Audio(), new Audio()];
 let poolIndex = 0;
@@ -418,44 +420,45 @@ function cancelFade(finishOutgoing) {
   }
 }
 
+
 function playAudioFile(file) {
-  cancelFade(true); // 前のフェードが残っていたら全部強制停止
+  cancelFade(true);
 
   if (currentAudio) retiringAudios.push(currentAudio);
 
   let newAudio;
   try {
-    newAudio = new Audio(file);
-    // v34: Audio.loop=true によるネイティブループはフェードがかからないので使わない。
-    // 'ended'（自然終了）を検知して同じ曲をこの関数自身で呼び直すことで、
-    // 既存のクロスフェード機構が同じ曲の頭出しにもそのまま効く。
-    newAudio.loop = false;
-    newAudio.volume = 0;
-    newAudio.playbackRate = SETTINGS.speed;  // BGM層のみ速度適用（自然音は対象外）
-    newAudio.addEventListener('error', (e) => {
+    newAudio = takeAudio();
+
+    // 要素を使い回すため addEventListener だと毎回リスナーが積み上がる。
+    // プロパティ代入なら上書きされるので多重発火しない。
+    newAudio.onerror = (e) => {
       console.error(`音楽ファイルの読み込みエラー: ${file}`, e);
-    });
-    newAudio.addEventListener('ended', () => {
-      // まだこのインスタンスが「現在再生中の曲」であれば同じ曲を再スタート。
-      // 既に別の曲へ切り替わっている場合は何もしない（二重再生の防止）。
+    };
+    newAudio.onended = () => {
       if (newAudio === currentAudio) {
         playAudioFile(file);
       }
-    });
+    };
+
+    newAudio.loop = false;
+    newAudio.volume = 0;
+    newAudio.playbackRate = SETTINGS.speed;
+    newAudio.src = file;
+    newAudio.currentTime = 0;
+
     newAudio.play()
-    .then(() => {
-      console.log('再生開始', file, newAudio.paused, newAudio.volume);
-    })
-    .catch((err) => console.error('音楽再生エラー:', err));
-    } 
-    catch (err) {
-      console.error('音楽再生の初期化エラー:', err);
-      return;
-    }
-  
+      .then(() => {
+        console.log('再生開始', file, newAudio.paused, newAudio.volume);
+      })
+      .catch((err) => console.error('音楽再生エラー:', file, err));
+  } catch (err) {
+    console.error('音楽再生の初期化エラー:', err);
+    return;
+  }
+
   currentAudio = newAudio;
   startCrossfade();
-
 }
 
 function startCrossfade() {
