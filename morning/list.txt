@@ -1,5 +1,4 @@
-
-morning1.mp3
-morning2.mp3
-morning3.mp3
-morning4.mp3
+morning1.mp3,Sur-les-Paves-de-Strahlburg
+morning2.mp3,テラス・カリスティア
+morning3.mp3,冒険日和！
+morning4.mp3,いざ、素材蒐集！

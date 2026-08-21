@@ -69,13 +69,26 @@ const TRACK_CREDITS = {
 // folder/list.txt を読み込み、フォルダ名を先頭に付けたパスの配列を返す。
 // 読み込めなかった場合は空配列を返す（呼び出し側でクラッシュしないよう
 // playPhaseTrack 側にも空リストのガードを入れてある）。
+// v47:
+// folder/list.txt を読み込み、{ path, title } の配列を返す。
+// list.txt は「ファイル名,原曲名」の2列形式（v47）。
+// カンマ以降が無い行は、原曲名としてファイル名をそのまま使う。
+// これで list.txt を一度に全部書き換えなくても動く。
+// 読み込めなかった場合は空配列を返す（呼び出し側でクラッシュしないよう
+// playPhaseTrack 側にも空リストのガードを入れてある）。
 async function loadTrackList(folder) {
   try {
     const res = await fetch(`${folder}/list.txt`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const text = await res.text();
-    const files = text.split('\n').map((s) => s.trim()).filter((s) => s.length > 0);
-    return files.map((f) => `${folder}/${f}`);
+    const lines = text.split('\n').map((s) => s.trim()).filter((s) => s.length > 0);
+    return lines.map((line) => {
+      const [file, title] = line.split(',');
+      return {
+        path: `${folder}/${file.trim()}`,
+        title: (title || file).trim()
+      };
+    });
   } catch (e) {
     console.error(`曲リストの読み込みに失敗: ${folder}/list.txt`, e);
     return [];
@@ -140,32 +153,40 @@ function saveTrackSelection() {
 }
 
 // loadAllTracks の完了後に呼ぶ。存在しないファイル名を捨て、未設定なら
+// 作業曲＝全曲・休憩曲＝先頭1曲を初期値にする。// loadAllTracks の完了後に呼ぶ。存在しないファイル名を捨て、未設定なら
 // 作業曲＝全曲・休憩曲＝先頭1曲を初期値にする。
+//
+// v47: musicTracks/restTracks の要素が { path, title } になったため、
+// 比較の前にパスだけの配列へ落とす。trackSelection と localStorage は
+// これまで通りパスの文字列で保持する（保存形式を変えると既存の
+// 選択が全部消えるため）。
 function normalizeTrackSelection() {
   PHASES.forEach((p) => {
-    const work = musicTracks[p] || [];
-    const rest = restTracks[p] || [];
+    const workPaths = (musicTracks[p] || []).map((t) => t.path);
+    const restPaths = (restTracks[p] || []).map((t) => t.path);
 
     if (!Array.isArray(trackSelection[p].work)) {
-      trackSelection[p].work = work.slice();
+      trackSelection[p].work = workPaths.slice();
     } else {
-      trackSelection[p].work = trackSelection[p].work.filter((f) => work.includes(f));
-      if (trackSelection[p].work.length === 0) trackSelection[p].work = work.slice();
+      trackSelection[p].work = trackSelection[p].work.filter((f) => workPaths.includes(f));
+      if (trackSelection[p].work.length === 0) trackSelection[p].work = workPaths.slice();
     }
 
-    if (!rest.includes(trackSelection[p].rest)) {
-      trackSelection[p].rest = rest.length ? rest[0] : null;
+    if (!restPaths.includes(trackSelection[p].rest)) {
+      trackSelection[p].rest = restPaths.length ? restPaths[0] : null;
     }
   });
   saveTrackSelection();
 }
 
 // 実際に再生に使う作業曲リスト。playPhaseTrack と applySegmentMusic が使う。
+// 戻り値は { path, title } の配列。
+// v47: trackSelection はパスの文字列で持っているので、比較は t.path で行う。
 function effectiveWorkList(phase) {
   const all = musicTracks[phase] || [];
   const sel = trackSelection[phase].work;
   if (!Array.isArray(sel) || sel.length === 0) return all;
-  const filtered = all.filter((f) => sel.includes(f));
+  const filtered = all.filter((t) => sel.includes(t.path));
   return filtered.length ? filtered : all;
 }
 
@@ -176,7 +197,8 @@ function effectiveRestList(phase) {
   const all = restTracks[phase] || [];
   if (all.length === 0) return [];
   const sel = trackSelection[phase].rest;
-  return [all.includes(sel) ? sel : all[0]];
+  const found = all.find((t) => t.path === sel);
+  return [found || all[0]];
 }
 
 // ---- 自然音（重ねがけレイヤー。BGM/クロスフェード系とは完全に独立） ----
@@ -559,10 +581,15 @@ function playPhaseTrack(phase, isRest, advance, immediate = false) {
   // 選択を変えた直後などで範囲外になっていたら先頭へ戻す
   if (indexByPhase[phase] >= list.length || indexByPhase[phase] < 0) indexByPhase[phase] = 0;
 
-  const file = list[indexByPhase[phase]];
+    // v47: list の要素が { path, title } になったため、track として受けて
+  // 再生には path、表示には title を使う。
+  const track = list[indexByPhase[phase]];
+  const file = track.path;
   const fullList = isRest ? restTracks[phase] : musicTracks[phase];
-  const dispNo = fullList.indexOf(file) + 1;
-
+  // 選択で絞ったリストと元のリストは同じオブジェクトを共有しているが、
+  // 将来 map で作り直しても壊れないよう path で照合する。
+  const dispNo = fullList.findIndex((t) => t.path === track.path) + 1;
+  
   // 作業・休憩どちらでも、その時間帯の行を「再生中」としてハイライトする
   const w = document.querySelector(`[data-phase="${phase}"]`);
   if (w) w.classList.add('playing');
@@ -1253,60 +1280,63 @@ function renderTrackSelect() {
     workBox.innerHTML = '';
     const sel = effectiveWorkList(phase);
     const all = musicTracks[phase] || [];
-    if (all.length === 0) {
-      workBox.textContent = '曲がありません（list.txt を確認してください）';
-    } else {
-      all.forEach((fullPath, i) => {
+      // v47: fileName 欄にはファイル名ではなく原曲名を出す。
+      // ファイル名を併記したい場合は track.path.split('/').pop() を足す。
+      all.forEach((track, i) => {
         workBox.appendChild(buildTrackRow({
           type: 'checkbox',
           name: `tsel-work-${phase}`,
           label: `${label}${i + 1}`,
-          fileName: fullPath.split('/').pop(),
-          checked: sel.includes(fullPath),
-          onChange: (checked) => toggleWorkTrack(fullPath, checked)
+          fileName: track.title,
+          checked: sel.some((t) => t.path === track.path),
+          onChange: (checked) => toggleWorkTrack(track.path, checked)
         }));
       });
-    }
+
   }
 
   const restBox = document.getElementById('track-rest-list');
   if (restBox) {
     restBox.innerHTML = '';
     const all = restTracks[phase] || [];
+
     const cur = effectiveRestList(phase)[0] || null;
     if (all.length === 0) {
       restBox.textContent = '曲がありません（list.txt を確認してください）';
     } else {
-      all.forEach((fullPath, i) => {
+      all.forEach((track, i) => {
         restBox.appendChild(buildTrackRow({
           type: 'radio',
           name: `tsel-rest-${phase}`,
           label: `${label}(休)${i + 1}`,
-          fileName: fullPath.split('/').pop(),
-          checked: fullPath === cur,
-          onChange: () => setRestTrack(fullPath)
+          fileName: track.title,
+          checked: cur !== null && track.path === cur.path,
+          onChange: () => setRestTrack(track.path)
         }));
       });
+
     }
   }
 }
 
-function toggleWorkTrack(fullPath, checked) {
+// v47: 引数はパスの文字列（オブジェクトではない）。
+// trackSelection はパスで保持しているため、比較も保存もパスで統一する。
+function toggleWorkTrack(path, checked) {
   const phase = trackSelectPhase;
   if (!phase) return;
-  const all = musicTracks[phase] || [];
-  let sel = effectiveWorkList(phase).slice();
+  const allPaths = (musicTracks[phase] || []).map((t) => t.path);
+  let sel = effectiveWorkList(phase).map((t) => t.path);
 
   if (checked) {
-    if (!sel.includes(fullPath)) sel.push(fullPath);
+    if (!sel.includes(path)) sel.push(path);
   } else {
     // 最低1曲は残す（全部外して無音になるのを防ぐ）
     if (sel.length <= 1) { renderTrackSelect(); return; }
-    sel = sel.filter((f) => f !== fullPath);
+    sel = sel.filter((p) => p !== path);
   }
 
   // list.txt の並び順に整え直してから保存する
-  trackSelection[phase].work = all.filter((f) => sel.includes(f));
+  trackSelection[phase].work = allPaths.filter((p) => sel.includes(p));
   saveTrackSelection();
   currentMusicIndex[phase] = 0;
   updatePhaseTrackLabel(phase);
@@ -1325,7 +1355,9 @@ function setRestTrack(fullPath) {
 function selectAllWorkTracks() {
   const phase = trackSelectPhase;
   if (!phase) return;
-  trackSelection[phase].work = (musicTracks[phase] || []).slice();
+  // v47: musicTracks の要素はオブジェクトなので、パスだけ抜いて保存する。
+  trackSelection[phase].work = (musicTracks[phase] || []).map((t) => t.path);
+  
   saveTrackSelection();
   currentMusicIndex[phase] = 0;
   updatePhaseTrackLabel(phase);
@@ -1599,4 +1631,4 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatusDisplay();
 });
 
-console.log('ScriptBGM.js v43 読み込み完了');
+console.log('ScriptBGM.js v45 読み込み完了');
