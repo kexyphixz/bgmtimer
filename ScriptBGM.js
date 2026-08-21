@@ -856,7 +856,7 @@ function advanceCurrentTrack() {
 }
 
 function segmentSeconds() {
-  return TM.cycle === '25min' ? SETTINGS.workMin * 60 : SETTINGS.restMin * 60;
+  return TM.cycle === '25min' ? SETTINGS.workMin * 7 : SETTINGS.restMin * 3;
 }
 
 function beginSegment() {
@@ -948,8 +948,7 @@ function onSegmentComplete() {
   TM.gapId = setTimeout(() => {
     TM.gapId = null;
     if (TM.mode === 'loop' || TM.mode === 'continuous') beginSegment();
-  }, 
- );
+  }, 1000);
 }
 
 // 完了 → 音楽も含めて自然停止し、状態を完全リセット
