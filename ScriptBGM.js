@@ -1521,8 +1521,7 @@ function renderCredits() {
     phaseEl.textContent = groupTitle;
     box.appendChild(phaseEl);
 
-    items.forEach(({ fullPath, label }) => {
-      const fileName = fullPath.split('/').pop();
+    items.forEach(({ fullPath, label, title }) => {
       const meta = TRACK_CREDITS[fullPath] || {};
       const artistText = meta.artist || '未設定';
 
@@ -1531,7 +1530,8 @@ function renderCredits() {
 
       const t = document.createElement('span');
       t.className = 'credit-title';
-      t.textContent = `${label}（${fileName}）`;
+      // v49: 括弧内はファイル名ではなく原曲名（list.txt の2列目）。
+      t.textContent = `${label}（${title}）`;
 
       const a = document.createElement('span');
       a.className = 'credit-artist';
@@ -1553,22 +1553,37 @@ function renderCredits() {
   }
 
   // 作業曲・休憩曲（朝/昼/夜 × 2）
+  // v49: musicTracks/restTracks の要素が { path, title } になったため、
+  // fullPath には path を渡す。title は原曲名として renderGroup 側で使う。
   PHASES.forEach((phase) => {
     const workLabel = LABEL_BY_PHASE[phase];
     renderGroup(
       workLabel,
-      musicTracks[phase].map((fullPath, i) => ({ fullPath, label: `${workLabel}${i + 1}` }))
+      musicTracks[phase].map((track, i) => ({
+        fullPath: track.path,
+        title: track.title,
+        label: `${workLabel}${i + 1}`
+      }))
     );
     renderGroup(
       `${workLabel}（休憩）`,
-      restTracks[phase].map((fullPath, i) => ({ fullPath, label: `${workLabel}(休)${i + 1}` }))
+      restTracks[phase].map((track, i) => ({
+        fullPath: track.path,
+        title: track.title,
+        label: `${workLabel}(休)${i + 1}`
+      }))
     );
   });
 
   // 自然音
+  // 自然音は { path, title } 形式ではないため、title にはラベルを入れる。
   renderGroup(
     '自然音',
-    Object.values(NATURE_SOUNDS).map((s) => ({ fullPath: s.file, label: s.label }))
+    Object.values(NATURE_SOUNDS).map((s) => ({
+      fullPath: s.file,
+      title: s.label,
+      label: s.label
+    }))
   );
 }
 
@@ -1635,4 +1650,4 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatusDisplay();
 });
 
-console.log('ScriptBGM.js v48 読み込み完了');
+console.log('ScriptBGM.js v49 読み込み完了');
