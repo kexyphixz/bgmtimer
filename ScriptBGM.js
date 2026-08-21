@@ -1649,4 +1649,4 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatusDisplay();
 });
 
-console.log('ScriptBGM.js v49 読み込み完了');
+console.log('ScriptBGM.js v50 読み込み完了');
