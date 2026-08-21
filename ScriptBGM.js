@@ -397,15 +397,20 @@ let activeButton = null;
 // =====
 // iphoneにて連続再生されなかったので仕様変更
 // iOS Safari は new Audio() のたびにファイルを再取得するため、
-// 要素を固定で持って src を差し替える方式にする。
-// =====
-const audioPool = [new Audio(), new Audio(), new Audio()];
-let poolIndex = 0;
-function takeAudio() {
-  const a = audioPool[poolIndex];
-  poolIndex = (poolIndex + 1) % audioPool.length;
-  return a;
-}
+// 要素を固定で持って src を差し替える方式にする。→これもダメだったので次：v48
+
+// =====================================================================
+// 音声要素（v48）
+// =====================================================================
+// iOS Safari は複数の音声ストリームを同時再生できない（Apple公式に明記）。
+// クロスフェードは原理的に成立せず、要素を使い回すと再生中の src を
+// 上書きして音が混ざる・止まる等の不具合を起こした。
+// そのため要素は1つだけ持ち、src を差し替える方式に統一する。
+// new Audio() を毎回作らないのは、iOS がファイルをキャッシュせず
+// 生成のたびに再取得するため（v46 からの方針を継続）。
+const bgmAudio = new Audio();
+
+
 
 let unlocked = false;
 function unlock() {
@@ -443,45 +448,40 @@ function cancelFade(finishOutgoing) {
 }
 
 
-function playAudioFile(file) {
+// v48: クロスフェードを廃止。要素1つの src 差し替えで即時切替する。
+function playAudioFile(file, immediate = false) {
   cancelFade(true);
+  retiringAudios = [];
 
-  if (currentAudio) retiringAudios.push(currentAudio);
-
-  let newAudio;
   try {
-    newAudio = takeAudio();
-
-    // 要素を使い回すため addEventListener だと毎回リスナーが積み上がる。
+    // 要素を使い回すため addEventListener だとリスナーが積み上がる。
     // プロパティ代入なら上書きされるので多重発火しない。
-    newAudio.onerror = (e) => {
+    bgmAudio.onerror = (e) => {
       console.error(`音楽ファイルの読み込みエラー: ${file}`, e);
     };
-    newAudio.onended = () => {
-      if (newAudio === currentAudio) {
-        playAudioFile(file);
-      }
+    // v34以来、同じ曲の頭出しも ended 経由で行っている。
+    bgmAudio.onended = () => {
+      if (bgmAudio.src === lastRequestedSrc) playAudioFile(file);
     };
 
-    newAudio.loop = false;
-    newAudio.volume = 0;
-    newAudio.playbackRate = SETTINGS.speed;
-    newAudio.src = file;
-    newAudio.currentTime = 0;
+    bgmAudio.loop = false;
+    bgmAudio.playbackRate = SETTINGS.speed;
+    bgmAudio.src = file;
+    lastRequestedSrc = bgmAudio.src;
+    bgmAudio.currentTime = 0;
+    bgmAudio.volume = TARGET_VOLUME;
 
-    newAudio.play()
-      .then(() => {
-        console.log('再生開始', file, newAudio.paused, newAudio.volume);
-      })
+    bgmAudio.play()
+      .then(() => console.log('再生開始', file))
       .catch((err) => console.error('音楽再生エラー:', file, err));
   } catch (err) {
     console.error('音楽再生の初期化エラー:', err);
     return;
   }
 
-  currentAudio = newAudio;
-  startCrossfade();
+  currentAudio = bgmAudio;
 }
+let lastRequestedSrc = null;
 
 function startCrossfade() {
   const ms = fadeMs();
@@ -629,13 +629,17 @@ function updatePhaseTrackLabel(phase) {
 }
 function refreshAllPhaseTrackLabels() { PHASES.forEach(updatePhaseTrackLabel); }
 
+// v48: 要素を使い回すため、停止時に onended を外さないと
+// 停止後の ended 発火で再生が再開してしまう。
 function stopMusic() {
   cancelFade(true);
   if (currentAudio) {
+    currentAudio.onended = null;
     currentAudio.pause();
     currentAudio.currentTime = 0;
     currentAudio = null;
   }
+  lastRequestedSrc = null;
 }
 
 // =====================================================================
@@ -1631,4 +1635,4 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatusDisplay();
 });
 
-console.log('ScriptBGM.js v45 読み込み完了');
+console.log('ScriptBGM.js v48 読み込み完了');
