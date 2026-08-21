@@ -1,2 +1,2 @@
-Reposons-un-Peu.mp3
-涼風のシュトラールブルク.mp3
+morningrest1.mp3,Reposons-un-Peu
+morningrest2.mp3,涼風のシュトラールブルク
