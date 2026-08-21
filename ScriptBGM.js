@@ -311,8 +311,13 @@ let currentAudio = null;
 // 「直前に実際に鳴らしていた時間帯」を作業・休憩それぞれ別に記憶する。
 // 今回鳴らす時間帯と一致していれば「同じ時間帯に戻ってきた」＝曲を1つ進める。
 // 一致していなければ（nullも含む）「初めて」＝曲を進めず今のインデックスのまま。
-let lastWorkPhase = null;
-let lastRestPhase = null;
+//上の修正削除
+// v53: 区間をまたいだ「続き」か「初めて」かの判定。
+// 単一の値で持つと、連続ループで朝→昼→夜→朝と回ったとき、
+// 朝に戻った時点で前回が夜になり毎回「初めて」と判定されて曲が進まない。
+// フェーズごとに独立して記憶する。
+let visitedWork = { morning: false, noon: false, night: false };
+let visitedRest = { morning: false, noon: false, night: false };
 
 // v42: ループ回数を時間帯ごとに持つ（v31で共通化したものを再び分離）。
 // 人によって朝・昼・夜で自由に使える時間が違うので、朝1回・昼2回・夜4回の
@@ -825,23 +830,25 @@ function applySegmentMusic() {
   const isRest = (TM.cycle === '5min');
 
   // ---- 区間の1曲目を選ぶ ----
-  // 区間をまたいだ「続き」か「初めて」かの判定（lastWorkPhase / lastRestPhase 方式）。
+  // v53: 一度でもそのフェーズを再生していれば次の曲へ進める。
+  // 初回だけ現在のインデックス（＝先頭）のまま鳴らす。
   if (isRest) {
-    if (phase === lastRestPhase) {
+    if (visitedRest[phase]) {
       switchRestMusic(phase);
     } else {
       selectRestMusicWithoutChanging(phase);
     }
-    lastRestPhase = phase;
-    // 注意: 作業側の記憶（lastWorkPhase）はここでは更新しない。
+    visitedRest[phase] = true;
+    // 注意: 作業側の記憶（visitedWork）はここでは更新しない。
   } else {
-    if (phase === lastWorkPhase) {
+    if (visitedWork[phase]) {
       switchMusic(phase);
     } else {
       selectMusicWithoutChanging(phase);
     }
-    lastWorkPhase = phase;
+    visitedWork[phase] = true;
   }
+
 
   // ---- 区間内の均等分割セットアップ ----
   // 例: 作業曲を4曲選択・作業時間25分なら、25分÷4＝約6分ごとに次の曲へ。
@@ -980,8 +987,14 @@ function finishRun() {
   currentPlayingPhase = null;
   currentSegmentType = null;
   currentPlayingLabel = null;
-  lastWorkPhase = null; // 次回起動は必ず「初めて」扱いにする
-  lastRestPhase = null;
+  // v53: 次回起動は必ず「初めて」扱いにする。
+  // 曲順のインデックスも戻し、「すべて停止」と同じ挙動に揃える。
+  PHASES.forEach((p) => {
+    visitedWork[p] = false;
+    visitedRest[p] = false;
+    currentMusicIndex[p] = 0;
+    currentRestIndex[p] = 0;
+  });
 
   if (activeButton) { activeButton.classList.remove('active'); activeButton = null; }
   TM.mode = 'idle';
@@ -1681,4 +1694,4 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatusDisplay();
 });
 
-console.log('ScriptBGM.js v52 読み込み完了');
+console.log('ScriptBGM.js v53 読み込み完了');
