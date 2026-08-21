@@ -934,10 +934,11 @@ function onSegmentComplete() {
   // 「これから始まる区間」を指している。1秒のギャップ中に鳴るため、
   // 次の曲のフェードインとは重ならない。
   stopMusic();  // ← 追加。前倒しフェードで音量0のはずだが、確実に切る
+  console.log('合図音判定', willFinish, SETTINGS.endSound);
   if (!willFinish && SETTINGS.endSound) {
     if (TM.cycle === '5min') playToRestSound(); else playToWorkSound();
   }
-
+  
   if (willFinish) {
     finishRun();
     return;
@@ -949,6 +950,10 @@ function onSegmentComplete() {
     TM.gapId = null;
     if (TM.mode === 'loop' || TM.mode === 'continuous') beginSegment();
   }, 1000);
+
+  console.log('合図音判定', willFinish, SETTINGS.endSound);
+  if (!willFinish && SETTINGS.endSound) {
+
 }
 
 // 完了 → 音楽も含めて自然停止し、状態を完全リセット
