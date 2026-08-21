@@ -4,6 +4,162 @@
 
 ---
 
+## CHANGELOG（続き）
+
+### v51.1 — 貼り間違いの修正
+
+**症状**
+全ループボタンが反応しない。
+
+**原因**
+v51の修正時、`startContinuousLoop` に `startLoopSet` 用のログ行を誤って貼り付けた。当該関数には `phase` も `count` も存在しないため、参照時に例外が発生し、以降の処理が止まっていた。
+
+**変更**
+- `startContinuousLoop` から該当行を削除
+
+---
+
+### v51 — 合図音が鳴らない不具合の修正
+
+**症状**
+区間の切り替え時（作業→休憩、休憩→作業）に合図音が鳴らない。ローカルサーバーでは鳴るが、GitHub Pages上では鳴らない。
+
+**原因（推定）**
+`playTone` は最初の呼び出し時に AudioContext を生成する。区間の切り替えはユーザー操作から離れたタイミングで起きるため、生成された AudioContext は `suspended` 状態になる。`ctx.resume()` は Promise を返す非同期処理だが、その完了を待たずに `osc.start(now + n.start)` へ進むため、指定時刻が過去になり音が出ない。ローカルでは処理が速く間に合っていた。
+
+**変更**
+- `ensureSoundContext()` を追加。AudioContext の生成と `resume()` を行う
+- タイマー開始の4関数（`startLoopSet` / `startWorkOnly` / `startRestOnly` / `startContinuousLoop`）の先頭で呼び出し、ボタンのタップを起点に AudioContext を起こす
+
+**残課題**
+回線が細いときは依然として鳴らないことがある。合図音は音源ファイルを使わないため回線とは無関係のはずで、BGMの読み込み待ちが処理を圧迫している可能性がある（未検証）。
+
+---
+
+### v50 — 区間切り替えのギャップ時間が欠落
+
+**症状**
+区間の切り替えで、通知音とBGMのタイミングが重なる。
+
+**原因**
+`onSegmentComplete` 末尾の `setTimeout` で第2引数が空になっていた。`undefined` は待ち時間0として扱われるため、コメントに記された1秒のギャップが機能していなかった。構文エラーにならないため気づきにくい。
+
+**変更**
+- `setTimeout` の第2引数に `1000` を設定
+- 昼・夜の `list.txt` に原曲名を追加
+
+---
+
+### v49 — 設定画面が開かない不具合の修正
+
+**症状**
+設定画面が開かない。選曲モーダルは開く。
+
+**原因**
+`renderCredits` が `musicTracks` の要素を文字列として扱っていた。v47で要素が `{ path, title }` のオブジェクトに変わったため、`fullPath.split('/')` で例外が発生。`openSettings` 内で `renderCredits()` の後に画面を開く処理があるため、そこに到達していなかった。
+
+**変更**
+- `renderCredits` の `map` を `track` で受け、`fullPath: track.path` / `title: track.title` を渡す形に変更
+- `renderGroup` の表示を、ファイル名ではなく原曲名（`title`）に変更
+- 自然音は `{ path, title }` 形式ではないため、`title` にラベルを設定
+
+---
+
+### v48 — クロスフェードの廃止
+
+**症状**
+プール方式導入後、iPhoneで再生が破綻。2曲が同時に鳴る、再生が止まる、アクセスした瞬間に再生が始まる、同じ曲がループする、自然音を鳴らすと停止中の曲が流れ始める。
+
+**原因**
+Audio要素を3つで使い回していたため、`poolIndex` が一周すると再生中またはフェード中の要素の `src` を上書きしていた。加えて、要素を使い回すと `newAudio === currentAudio` の判定が意図せず真になり、`onended` が誤発火していた。
+
+Appleの公式ドキュメントに、iOSでは複数の音声ストリームの同時再生はサポートされないと明記されている。2026年時点でも同様との報告があり、クロスフェード自体がiOSでは原理的に成立しない。
+
+**変更**
+- クロスフェードを全環境で廃止（重要度が低いため、iOS判定による分岐は設けない）
+- Audio要素を `bgmAudio` の1つに統一
+- `lastRequestedSrc` を追加し、`ended` の判定を `src` の一致で行う（要素が1つでは `newAudio === currentAudio` が常に真になり判定として機能しないため）
+- `stopMusic` で `onended = null` と `lastRequestedSrc = null` を実行（停止後の `ended` 発火による再生再開を防ぐ）
+- `startCrossfade` の呼び出しを削除
+
+**残課題**
+- `startCrossfade` / `fadeMs` / `FADE_TICK_MS` / `clampVol` / `fadeTimer` が未使用のまま残存
+- 曲の切り替わりに読み込み待ちの無音が発生する（要素が1つのため、`src` 差し替え後にダウンロードが完了するまで無音）
+
+---
+
+### v47 — 選曲モーダルとクレジット欄に原曲名を表示
+
+**変更**
+- `list.txt` を「ファイル名,原曲名」の2列形式に変更。カンマ以降が無い行はファイル名を原曲名として扱うため、段階的に移行できる
+- `loadTrackList` の返り値を `{ path, title }` の配列に変更
+- `normalizeTrackSelection` / `effectiveWorkList` / `effectiveRestList` の比較を `path` で行うよう修正
+- `playPhaseTrack` で `track.path` を再生に使用。`dispNo` の照合を `findIndex` + `path` に変更
+- `renderTrackSelect` の表示を原曲名に変更。`toggleWorkTrack` / `setRestTrack` / `selectAllWorkTracks` の引数と保存をパス文字列に統一
+
+**設計判断**
+`trackSelection` と localStorage はパスの文字列で保持する形を維持した。保存形式を変更すると既存ユーザーの選択が全て失われるため。
+
+---
+
+### 未着手
+
+- **「すべて停止」後に曲順が続きから始まる**：`resetBgmState` の外に曲順を保持する変数がある。`playPhaseTrack` 周辺が未確認
+- **曲の切り替わりの無音**：音源のビットレートを落とす、フェードアウトを戻す（iOSで `volume` が効くかは未検証）などの案
+- **未使用関数の削除**：`startCrossfade` 他
+- **自然音とBGMの同時再生**：iOSの制約に触れている可能性。挙動を要確認
+- **回線が細いときに合図音が鳴らない**：原因未特定
+
+---
+
+### 作業メモ
+
+- iPhoneでJSの更新が届かない場合、`?v=` はHTMLにしか効かない。`<script src="scriptBGM.js?v=51">` のようにJS側にも付ける
+- 構文エラーが起きるとJS全体が実行されず、エラー表示も出ないまま「一部だけ動く」ように見える。設定画面が開かない、ログが出ないといった症状が出たら、まず構文エラーを疑う
+- 画面下部にログを表示する仕掛けは `console.log` のみを拾う。`console.error` と `console.warn` は表示されないため、Macのコンソールで確認する
+
+v46 — iOSでの再生失敗に対応（Audio要素のプール化）
+症状
+* 4回目の再生で NotSupportedError
+* 2曲目が鳴らないが、一時停止して再開すると鳴る
+* iOSのコントロールセンターで再生バーが途中で先頭に戻る
+原因（調査に基づく推定） iOS Safariはメディアファイルをキャッシュせず、new Audio() の生成ごとにファイルを再取得している可能性が指摘されている。playAudioFile は再生のたびに new Audio(file) を呼ぶ設計だったため、細い回線では取得が完了しないまま要素が積み上がり、上限に達して失敗したと考えられる。
+変更
+* Audio要素を3つ固定で持つプールを追加。src を差し替えて使い回す
+* playAudioFile から new Audio(file) を削除し、takeAudio() に置換
+* 要素の使い回しでリスナーが累積するため、addEventListener を onended / onerror のプロパティ代入に変更
+* .catch にファイル名を追加（どの曲で失敗したか特定するため）
+
+v45 — 拡大表示でのはみ出し修正
+症状 Androidの拡大表示モードで、朝昼夜の行が横方向にはみ出して切れる。自然音ボタンの行は正常。
+原因 .phase-row に flex-wrap の指定がなく、デフォルトの nowrap のまま折り返さずに横へ伸びていた。さらに overflow: hidden がはみ出し部分を切り落としていたため、症状が「切れる」形で現れ、原因の特定を遅らせた。
+変更
+* .phase-row に flex-wrap: wrap を追加
+* .phase-row の overflow: hidden を削除
+* 折り返し後に朝の行のラベルとボタンが重なったため、margin-top で余白を確保
+補足 朝の行のラベルは ::before の絶対配置（top: -1.05rem）でボタンの外側に出しており、レイアウト上の場所を占有しない。そのため padding-top では基準要素の内側に余白ができるだけで効かず、margin-top が必要だった。
+
+v44 — 音源ファイル名を半角英数化
+経緯 NotSupportedError の原因として日本語ファイル名を検証。GitHub Pagesはファイル名をURLとして扱うため、Unicode正規化の差（macOSのNFDとJS内文字列のNFC）で不一致が起き、404を返す可能性がある。404で返るHTMLを音声として解析すると NotSupportedError になるため、症状と一致していた。
+変更
+* 音源ファイル名を半角英数に統一
+* list.txt を併せて更新
+結果 症状は解消せず。原因ではなかった。ただしファイル名の文字コード問題は環境依存で表面化しやすいため、予防措置として維持する。
+
+未着手
+* iOSの同時再生制約：Appleの公式ドキュメントに複数音声ストリームの同時再生は非対応と明記。2026年時点でも変わらないという報告あり。クロスフェード自体がiOSで成立しない可能性が高い。iOS判定で fadeMs() を0にして即時切り替えにする案
+* 「すべて停止」後に曲順が続きから始まる：resetBgmState の外に曲順を保持する変数がある。playPhaseTrack 周辺が未確認。localStorageの可能性も
+* 自然音とBGMの同時再生：同じ制約に触れている可能性。iPhoneでの挙動を要確認
+* Web Audio APIへの移行：クロスフェードと音量制御の根本解決。規模大
+
+環境メモ
+* povoの使い放題トッピングでも、大量通信後は混雑時間帯に速度制限がかかる（規約に明記、閾値は非公表）
+* iPhoneでJSの更新が届かない場合、?v= はHTMLにしか効かない。<script src="scriptBGM.js?v=46"> のようにJS側にも付ける
+
+コミットメッセージ:
+git commit -m "v44: rename audio files to ascii / v45: fix phase row overflow / v46: reuse audio elements for iOS"
+
+---
 ## v43
 
 - 区間終了の `fadeSec` 秒前から前の曲だけを落とす（`startFadeOutOnly` 新設）。境界で無音にしてから遷移音を鳴らすため、音が重ならない。

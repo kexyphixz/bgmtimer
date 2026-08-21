@@ -872,7 +872,7 @@ function advanceCurrentTrack() {
 }
 
 function segmentSeconds() {
-  return TM.cycle === '25min' ? SETTINGS.workMin * 3 : SETTINGS.restMin * 3;
+  return TM.cycle === '25min' ? SETTINGS.workMin * 6 : SETTINGS.restMin * 6;
 }
 
 function beginSegment() {
@@ -950,7 +950,6 @@ function onSegmentComplete() {
   // 「これから始まる区間」を指している。1秒のギャップ中に鳴るため、
   // 次の曲のフェードインとは重ならない。
   stopMusic();  // ← 追加。前倒しフェードで音量0のはずだが、確実に切る
-  console.log('合図音判定', willFinish, SETTINGS.endSound);
   if (!willFinish && SETTINGS.endSound) {
     if (TM.cycle === '5min') playToRestSound(); else playToWorkSound();
   }
@@ -1166,6 +1165,13 @@ function resetBgmState() {
   currentPlayingLabel = null;
   lastWorkPhase = null; // ★重要: これがないと前回の続きと誤認識され、
   lastRestPhase = null; //   新しい開始のはずが2曲目から始まってしまう
+
+  // v52: 曲順のインデックスもここで戻す。これがないと「すべて停止」の後に
+  // 再生を始めたとき、前回の続きの曲から始まってしまう。
+  PHASES.forEach((p) => {
+    currentMusicIndex[p] = 0;
+    currentRestIndex[p] = 0;
+  });
 
   // タイマーを起動する系のボタンは全部 timer-action-btn クラスを持たせてあるので、
   // ここ1箇所でまとめてアクティブ表示を解除できる。
