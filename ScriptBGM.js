@@ -872,7 +872,7 @@ function advanceCurrentTrack() {
 }
 
 function segmentSeconds() {
-  return TM.cycle === '25min' ? SETTINGS.workMin * 7 : SETTINGS.restMin * 3;
+  return TM.cycle === '25min' ? SETTINGS.workMin * 3 : SETTINGS.restMin * 3;
 }
 
 function beginSegment() {
@@ -1085,11 +1085,9 @@ function startRestOnly(phase, btn) {
   beginSegment();
 }
 
-// 連続ループ（朝→昼→夜を作業/休憩で順送り、無制限）
+// 連続ループ（朝→昼→夜を作業/休憩で順送り、無制限）v51にてコードミス修正
 function startContinuousLoop() {
   console.log('連続ループ開始');
-  //v51
-  console.log(`${phase} ループ開始 x${count === 0 ? '無制限' : count}`);
   ensureSoundContext();
 
   const playAllBtn = document.getElementById('play-all');
@@ -1106,6 +1104,7 @@ function startContinuousLoop() {
   TM.loopTarget = 0;
   beginSegment();
 }
+
 
 // =====================================================================
 // 一時停止 / 再開 / 停止
