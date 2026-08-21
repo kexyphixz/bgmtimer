@@ -652,6 +652,22 @@ function stopMusic() {
 
 let endSoundCtx = null;
 
+
+// v51: 合図音は区間の切り替わり（ユーザー操作から離れたタイミング）で鳴るため、
+// その時点で AudioContext を作ると suspended のままになり、resume() の完了を
+// 待たずに osc.start() へ進んで音が出ないことがある。
+// ボタンのタップから呼べば、その場で再開が許可される。
+function ensureSoundContext() {
+  try {
+    if (!endSoundCtx) {
+      endSoundCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (endSoundCtx.state === 'suspended') endSoundCtx.resume();
+  } catch (e) {
+    console.warn('AudioContextの初期化に失敗:', e);
+  }
+}
+
 function playTone(notes, gainPeak) {
   try {
     if (!endSoundCtx) {
@@ -999,7 +1015,9 @@ function finishRun() {
 // 回数指定ループ。count=0 を渡すと「無制限ループ」になる
 // （onSegmentComplete の loopTarget 判定が0を偽と評価するため自動停止しない）。
 function startLoopSet(phase, count, btn) {
+  //v51
   console.log(`${phase} ループ開始 x${count === 0 ? '無制限' : count}`);
+  ensureSoundContext();
 
   // 同じボタンをもう一度押したら停止（トグル）
   if (btn && btn === activeButton) { resetBgmState(); return; }
@@ -1023,7 +1041,8 @@ function startLoopSet(phase, count, btn) {
 // 「25分」ボタン。作業曲だけを1回、workMin分再生して終了。
 function startWorkOnly(phase, btn) {
   console.log(`${phase} 作業のみ再生（単発）`);
-
+  console.log(`${phase} ループ開始 x${count === 0 ? '無制限' : count}`);
+  ensureSoundContext();
   if (btn && btn === activeButton) { resetBgmState(); return; }
 
   resetBgmState();
@@ -1045,7 +1064,9 @@ function startWorkOnly(phase, btn) {
 // 「5分」ボタン。休憩曲だけを1回、restMin分再生して終了。
 function startRestOnly(phase, btn) {
   console.log(`${phase} 休憩のみ再生（単発）`);
-
+  //v51
+  console.log(`${phase} ループ開始 x${count === 0 ? '無制限' : count}`);
+  ensureSoundContext();
   if (btn && btn === activeButton) { resetBgmState(); return; }
 
   resetBgmState();
@@ -1067,6 +1088,10 @@ function startRestOnly(phase, btn) {
 // 連続ループ（朝→昼→夜を作業/休憩で順送り、無制限）
 function startContinuousLoop() {
   console.log('連続ループ開始');
+  //v51
+  console.log(`${phase} ループ開始 x${count === 0 ? '無制限' : count}`);
+  ensureSoundContext();
+
   const playAllBtn = document.getElementById('play-all');
 
   if (playAllBtn && playAllBtn === activeButton) { resetBgmState(); return; }
@@ -1651,4 +1676,4 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatusDisplay();
 });
 
-console.log('ScriptBGM.js v50 読み込み完了');
+console.log('ScriptBGM.js v51 読み込み完了');
