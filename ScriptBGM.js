@@ -938,7 +938,7 @@ function onSegmentComplete() {
   if (!willFinish && SETTINGS.endSound) {
     if (TM.cycle === '5min') playToRestSound(); else playToWorkSound();
   }
-  
+
   if (willFinish) {
     finishRun();
     return;
@@ -950,9 +950,6 @@ function onSegmentComplete() {
     TM.gapId = null;
     if (TM.mode === 'loop' || TM.mode === 'continuous') beginSegment();
   }, 1000);
-
-  console.log('合図音判定', willFinish, SETTINGS.endSound);
-  if (!willFinish && SETTINGS.endSound) {
 
 }
 
