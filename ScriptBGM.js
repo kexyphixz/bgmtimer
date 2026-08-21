@@ -1675,4 +1675,4 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatusDisplay();
 });
 
-console.log('ScriptBGM.js v51 読み込み完了');
+console.log('ScriptBGM.js v51.1 読み込み完了');
