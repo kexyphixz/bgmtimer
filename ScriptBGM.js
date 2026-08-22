@@ -416,6 +416,35 @@ let activeButton = null;
 const bgmAudio = new Audio();
 
 
+//v54　あたり
+//ボリュームの確認
+//TODO: volume可否テスト用。判定後に削除
+document.getElementById('volTest').addEventListener('click', () => {
+  // --- volume ---
+  const volBefore = bgmAudio.volume;
+  bgmAudio.volume = 0.2;
+  const volAfter = bgmAudio.volume;
+
+  // 音が小さくなったか耳で確かめる時間を3秒とる
+  setTimeout(() => {
+    // --- muted ---
+    const mutedBefore = bgmAudio.muted;
+    bgmAudio.muted = true;
+    const mutedAfter = bgmAudio.muted;
+
+    // 1秒だけミュート状態を保ち、耳でも確認する
+    setTimeout(() => {
+      bgmAudio.muted = mutedBefore;   // 復旧
+      bgmAudio.volume = volBefore;    // 復旧
+
+      alert(
+        `volume: ${volBefore} → ${volAfter}\n` +
+        `muted:  ${mutedBefore} → ${mutedAfter}`
+      );
+    }, 1000);
+  }, 3000);
+});
+
 
 let unlocked = false;
 function unlock() {
@@ -452,7 +481,6 @@ function cancelFade(finishOutgoing) {
   }
 }
 
-
 // v48: クロスフェードを廃止。要素1つの src 差し替えで即時切替する。
 function playAudioFile(file, immediate = false) {
   cancelFade(true);
@@ -474,11 +502,14 @@ function playAudioFile(file, immediate = false) {
     bgmAudio.src = file;
     lastRequestedSrc = bgmAudio.src;
     bgmAudio.currentTime = 0;
-    bgmAudio.volume = TARGET_VOLUME;
+    bgmAudio.volume = 0; //v54 開始音量フェード用に変更
 
     bgmAudio.play()
-      .then(() => console.log('再生開始', file))
-      .catch((err) => console.error('音楽再生エラー:', file, err));
+    .then(() => {
+      console.log('再生開始', file);
+      startFadeInOnly();
+    })
+    .catch((err) => console.error('音楽再生エラー:', file, err));
   } catch (err) {
     console.error('音楽再生の初期化エラー:', err);
     return;
@@ -488,41 +519,7 @@ function playAudioFile(file, immediate = false) {
 }
 let lastRequestedSrc = null;
 
-function startCrossfade() {
-  const ms = fadeMs();
-
-  // フェード0秒設定、または不正値なら即時切替
-  if (!Number.isFinite(ms) || ms <= 0) {
-    if (currentAudio) currentAudio.volume = TARGET_VOLUME;
-    retiringAudios.forEach((a) => { a.pause(); a.currentTime = 0; });
-    retiringAudios = [];
-    return;
-  }
-
-  const steps = Math.max(1, Math.round(ms / FADE_TICK_MS)) || 30; // NaN対策の最終防波堤
-  let step = 0;
-  const outStarts = retiringAudios.map((a) => a.volume);
-
-  fadeTimer = setInterval(() => {
-    step++;
-    const p = Math.min(1, step / steps);
-
-    if (currentAudio) {
-      currentAudio.volume = clampVol(TARGET_VOLUME * Math.sin(p * Math.PI / 2));
-    }
-    retiringAudios.forEach((a, i) => {
-      a.volume = clampVol(outStarts[i] * Math.cos(p * Math.PI / 2));
-    });
-
-    if (p >= 1 || step > steps + 20) { // 安全弁：想定回数を超えたら強制終了
-      clearInterval(fadeTimer);
-      fadeTimer = null;
-      if (currentAudio) currentAudio.volume = TARGET_VOLUME;
-      retiringAudios.forEach((a) => { a.pause(); a.currentTime = 0; });
-      retiringAudios = [];
-    }
-  }, FADE_TICK_MS);
-}
+//startCrossfade を削除
 
 // 区間終了の直前に、前の曲だけを落とす。クロスフェードではなくフェードアウト単独。
 function startFadeOutOnly() {
@@ -548,6 +545,31 @@ function startFadeOutOnly() {
   }, FADE_TICK_MS);
 }
 
+// v54 フェードイン用
+// 曲の開始時に、0 から TARGET_VOLUME へ上げる。
+function startFadeInOnly() {
+  const ms = fadeMs();
+  if (!Number.isFinite(ms) || ms <= 0) {
+    if (currentAudio) currentAudio.volume = TARGET_VOLUME;
+    return;
+  }
+  if (!currentAudio) return;
+
+  const target = currentAudio;
+  const steps = Math.max(1, Math.round(ms / FADE_TICK_MS));
+  let step = 0;
+
+  fadeTimer = setInterval(() => {
+    step++;
+    const p = Math.min(1, step / steps);
+    target.volume = clampVol(TARGET_VOLUME * Math.sin(p * Math.PI / 2));
+    if (p >= 1 || step > steps + 20) {
+      clearInterval(fadeTimer);
+      fadeTimer = null;
+      target.volume = TARGET_VOLUME;
+    }
+  }, FADE_TICK_MS);
+}
 
 function clampVol(v) {
   if (v < 0) return 0;
@@ -901,12 +923,28 @@ function startCountdown() {
     // remaining>0 のときだけ処理する。
     if (TM.remaining > 0 && TM.trackSlotSeconds) {
       TM.trackRemaining--;
+
+      // v54　曲送りのフェードアウト
+      if (TM.trackRemaining === Math.max(1, Math.ceil(SETTINGS.fadeSec))
+        && TM.trackSwitchesDone < TM.trackSwitchesTarget
+        && currentAudio) {
+      startFadeOutOnly();
+      }
+    // ここまで
+
       if (TM.trackRemaining <= 0 && TM.trackSwitchesDone < TM.trackSwitchesTarget) {
         advanceCurrentTrack();
         TM.trackSwitchesDone++;
         TM.trackRemaining = TM.trackSlotSeconds;
       }
     }
+
+    if (TM.remaining <= Math.max(1, Math.ceil(SETTINGS.fadeSec))
+      && !TM.fadeStarted && currentAudio) {
+    TM.fadeStarted = true;
+    startFadeOutOnly();
+  }
+
     // 区間終了の fadeSec 秒前になったら、前の曲だけ先に落とし始める。
     // 境界に達した時点で音量0になっているので、次の曲は即切りで立ち上がる。
     if (TM.remaining === Math.max(1, Math.ceil(SETTINGS.fadeSec)) && currentAudio) {
@@ -1484,7 +1522,7 @@ function adjustSpeed(delta) {
   SETTINGS.speed = next;
   saveSettings();
   syncSettingsUI();
-  // 再生中のBGMに即反映（クロスフェード中の旧トラックにも）
+//
   if (currentAudio) currentAudio.playbackRate = SETTINGS.speed;
   retiringAudios.forEach((a) => { a.playbackRate = SETTINGS.speed; });
 }
@@ -1524,9 +1562,9 @@ function adjustRestMin(delta) {
   updateSegmentButtonLabels();
   updateStatusDisplay();
 }
-
+// v54 フェードの時間を１秒単位に
 function adjustFadeSec(delta) {
-  const next = Math.round((SETTINGS.fadeSec + delta) * 10) / 10;
+  const next = Math.round(SETTINGS.fadeSec + delta);
   if (next < FADE_SEC_RANGE.min || next > FADE_SEC_RANGE.max) return;
   SETTINGS.fadeSec = next;
   saveSettings();
@@ -1647,7 +1685,6 @@ function onSupportClick(event) {
 // =====================================================================
 
 document.addEventListener('DOMContentLoaded', function () {
-  console.log('BGMタイマー ScriptBGM.js v41 読み込み完了');
 
   // 設定と曲の選択状態の復元
   loadSettings();
@@ -1694,4 +1731,4 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatusDisplay();
 });
 
-console.log('ScriptBGM.js v53 読み込み完了');
+console.log('ScriptBGM.js v54 読み込み完了');
