@@ -496,6 +496,7 @@ let lastRequestedSrc = null;
 
 // 区間終了の直前に、前の曲だけを落とす。クロスフェードではなくフェードアウト単独。
 function startFadeOutOnly() {
+  if (fadeTimer) return;          // ← 追加 v59 二重発火防止
   const ms = fadeMs();
   if (!Number.isFinite(ms) || ms <= 0) return;
   if (!currentAudio) return;
@@ -1701,4 +1702,4 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatusDisplay();
 });
 
-console.log('ScriptBGM.js v58 読み込み完了');
+console.log('ScriptBGM.js v59 読み込み完了');
