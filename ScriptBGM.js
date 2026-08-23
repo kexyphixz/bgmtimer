@@ -416,35 +416,8 @@ let activeButton = null;
 const bgmAudio = new Audio();
 
 
-//v54　あたり
-//ボリュームの確認
-//TODO: volume可否テスト用。判定後に削除
-document.getElementById('volTest').addEventListener('click', () => {
-  // --- volume ---
-  const volBefore = bgmAudio.volume;
-  bgmAudio.volume = 0.2;
-  const volAfter = bgmAudio.volume;
-
-  // 音が小さくなったか耳で確かめる時間を3秒とる
-  setTimeout(() => {
-    // --- muted ---
-    const mutedBefore = bgmAudio.muted;
-    bgmAudio.muted = true;
-    const mutedAfter = bgmAudio.muted;
-
-    // 1秒だけミュート状態を保ち、耳でも確認する
-    setTimeout(() => {
-      bgmAudio.muted = mutedBefore;   // 復旧
-      bgmAudio.volume = volBefore;    // 復旧
-
-      alert(
-        `volume: ${volBefore} → ${volAfter}\n` +
-        `muted:  ${mutedBefore} → ${mutedAfter}`
-      );
-    }, 1000);
-  }, 3000);
-});
-
+//v54　あたり　テスト用vol mute ボタン
+//v56 テスト用vol mute ボタン関連を削除
 
 let unlocked = false;
 function unlock() {
@@ -456,7 +429,7 @@ function unlock() {
 }
 
 // =====================================================================
-// 音楽再生（クロスフェード層）
+// 音楽再生（フェード層）
 // =====================================================================
 
 // iphoneのテスト用　終わったら消す
@@ -1028,10 +1001,10 @@ function finishRun() {
   // v53: 次回起動は必ず「初めて」扱いにする。
   // 曲順のインデックスも戻し、「すべて停止」と同じ挙動に揃える。
   PHASES.forEach((p) => {
-    visitedWork[p] = false;
-    visitedRest[p] = false;
     currentMusicIndex[p] = 0;
     currentRestIndex[p] = 0;
+    visitedWork[p] = false;
+    visitedRest[p] = false;
   });
 
   if (activeButton) { activeButton.classList.remove('active'); activeButton = null; }
@@ -1219,6 +1192,9 @@ function resetBgmState() {
   PHASES.forEach((p) => {
     currentMusicIndex[p] = 0;
     currentRestIndex[p] = 0;
+    visitedWork[p] = false;
+    visitedRest[p] = false;
+
   });
 
   // タイマーを起動する系のボタンは全部 timer-action-btn クラスを持たせてあるので、
@@ -1728,4 +1704,4 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatusDisplay();
 });
 
-console.log('ScriptBGM.js v55 読み込み完了');
+console.log('ScriptBGM.js v56 読み込み完了');
