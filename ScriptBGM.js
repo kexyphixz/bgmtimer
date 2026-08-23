@@ -445,23 +445,20 @@ console.log = (...a) => {
 };
 
 let fadeTimer = null;        // 進行中フェードの interval ID
-let retiringAudios = [];     // フェードアウト中の旧トラック（複数保持できる）
 
-function cancelFade(finishOutgoing) {
+// 進行中のフェード（フェードイン・フェードアウトのどちらも）を中断する。
+// v61: 旧クロスフェード時代の retiringAudios を扱う分岐を削除し、
+//      それに伴って引数 finishOutgoing も廃止した。
+function cancelFade() {
   if (fadeTimer) {
     clearInterval(fadeTimer);
     fadeTimer = null;
-  }
-  if (finishOutgoing) {
-    retiringAudios.forEach((a) => { a.pause(); a.currentTime = 0; });
-    retiringAudios = [];
   }
 }
 
 // v48: クロスフェードを廃止。要素1つの src 差し替えで即時切替する。
 function playAudioFile(file, immediate = false) {
-  cancelFade(true);
-  retiringAudios = [];
+  cancelFade(); //retiringAudios = [];削除
 
   try {
     // 要素を使い回すため addEventListener だとリスナーが積み上がる。
@@ -496,16 +493,15 @@ function playAudioFile(file, immediate = false) {
 }
 let lastRequestedSrc = null;
 
-//startCrossfade を削除
-
 // 区間終了の直前に、前の曲だけを落とす。クロスフェードではなくフェードアウト単独。
 function startFadeOutOnly() {
+
   if (fadeTimer) return;          // ← 追加 v59 二重発火防止
   const ms = fadeMs();
   if (!Number.isFinite(ms) || ms <= 0) return;
   if (!currentAudio) return;
 
-  cancelFade(false); // 進行中のフェードは止めるが retiringAudios には触らない
+  cancelFade(); // 進行中のフェードを止めてから、新しいフェードアウトを始める
   const target = currentAudio;
   const startVol = target.volume;
   const steps = Math.max(1, Math.round(ms / FADE_TICK_MS));
@@ -515,6 +511,7 @@ function startFadeOutOnly() {
     step++;
     const p = Math.min(1, step / steps);
     target.volume = clampVol(startVol * Math.cos(p * Math.PI / 2));
+
     if (p >= 1 || step > steps + 20) {
       clearInterval(fadeTimer);
       fadeTimer = null;
@@ -637,7 +634,7 @@ function refreshAllPhaseTrackLabels() { PHASES.forEach(updatePhaseTrackLabel); }
 // v48: 要素を使い回すため、停止時に onended を外さないと
 // 停止後の ended 発火で再生が再開してしまう。
 function stopMusic() {
-  cancelFade(true);
+  cancelFade();
   if (currentAudio) {
     currentAudio.onended = null;
     currentAudio.pause();
@@ -1147,7 +1144,7 @@ function pauseTimer() {
     return;
   }
 
-  cancelFade(true);
+  cancelFade();
   if (currentAudio) {
     currentAudio.volume = TARGET_VOLUME;
     currentAudio.pause();
@@ -1500,7 +1497,7 @@ function adjustSpeed(delta) {
   syncSettingsUI();
 //
   if (currentAudio) currentAudio.playbackRate = SETTINGS.speed;
-  retiringAudios.forEach((a) => { a.playbackRate = SETTINGS.speed; });
+
 }
 
 // --- 合図音のオン/オフ（区間の切り替え音と終了音を一括で制御する） ---
@@ -1706,4 +1703,4 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatusDisplay();
 });
 
-console.log('ScriptBGM.js v60 読み込み完了');
+console.log('ScriptBGM.js v61 読み込み完了');
