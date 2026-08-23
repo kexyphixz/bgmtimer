@@ -235,6 +235,10 @@ function loadSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (raw) SETTINGS = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    // v60: 保存値が壊れていても動くよう、フェード時間を整数かつ範囲内に丸める。
+    // 刻みを1秒に変える前の 0.5 等が残っている場合にも効く。
+    SETTINGS.fadeSec = Math.min(FADE_SEC_RANGE.max,
+                       Math.max(FADE_SEC_RANGE.min, Math.round(SETTINGS.fadeSec) || 0));
   } catch (e) {
     console.warn('設定の読み込みに失敗。初期値を使用:', e);
     SETTINGS = { ...DEFAULT_SETTINGS };
@@ -1457,7 +1461,7 @@ function syncSettingsUI() {
   if (restEl) restEl.textContent = SETTINGS.restMin + '分';
 
   const fadeEl = document.getElementById('set-fade-sec');
-  if (fadeEl) fadeEl.textContent = SETTINGS.fadeSec + '秒';
+  if (fadeEl) fadeEl.textContent = SETTINGS.fadeSec === 0 ? 'なし' : SETTINGS.fadeSec + '秒';
 
   const speedEl = document.getElementById('set-speed');
   if (speedEl) speedEl.textContent = SETTINGS.speed.toFixed(2) + '倍';
