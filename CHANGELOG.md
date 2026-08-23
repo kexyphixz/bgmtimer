@@ -15,7 +15,7 @@
 - 曲送り・区間終了の両判定を `<=` に変更し、`TM.trackFadeStarted` / `TM.segFadeStarted` で一度だけ発火させる形にした
 - 曲を切り替えた直後に `trackFadeStarted` を戻す
 - `applySegmentMusic` の末尾と `resetBgmState` で両フラグを戻す
-- `TM` の宣言に両フラグを追加。あわせて `trackSwitchesTarget` の行末にカンマが無く、追加時に構文エラーになった点を修正
+- `TM` の宣言に両フラグを追加。あわせて `tracｆkSwitchesTarget` の行末にカンマが無く、追加時に構文エラーになった点を修正
 - 区間終了の判定が `if (TM.remaining > 0 && TM.trackSlotSeconds)` の内側に入り込んでいたため、外へ出した。曲送りが無効な区間（休憩など）でフェードアウトが起きなくなっていた
 
 ---

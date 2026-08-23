@@ -461,6 +461,7 @@ function cancelFade() {
 // v48: クロスフェードを廃止。要素1つの src 差し替えで即時切替する。
 function playAudioFile(file, immediate = false) {
   cancelFade(); //retiringAudios = [];削除
+  ensureBgmGain();          // ← v63 追加
 
   try {
     // 要素を使い回すため addEventListener だとリスナーが積み上がる。
@@ -478,8 +479,8 @@ function playAudioFile(file, immediate = false) {
     bgmAudio.src = file;
     lastRequestedSrc = bgmAudio.src;
     bgmAudio.currentTime = 0;
-    bgmAudio.volume = 0; //v54 開始音量フェード用に変更
-
+    // v63: 音量は GainNode 側で持つ。要素の volume は使わない。
+    if (bgmGain) bgmGain.gain.value = 0;
     bgmAudio.play()
     .then(() => {
       console.log('再生開始', file);
@@ -490,60 +491,60 @@ function playAudioFile(file, immediate = false) {
     console.error('音楽再生の初期化エラー:', err);
     return;
   }
-
   currentAudio = bgmAudio;
 }
 let lastRequestedSrc = null;
 
-// 区間終了の直前に、前の曲だけを落とす。クロスフェードではなくフェードアウト単独。
+// 区間終了・曲送りの直前に、鳴っている曲を落とす。
+// v63: iOSで volume の代入が効かないため、音量は GainNode 側で動かす。
+//      bgmAudio.volume ではなく bgmGain.gain.value を操作する。
 function startFadeOutOnly() {
-
-  if (fadeTimer) return;          // ← 追加 v59 二重発火防止
+  if (fadeTimer) return;          // v59 二重発火防止
   const ms = fadeMs();
   if (!Number.isFinite(ms) || ms <= 0) return;
-  if (!currentAudio) return;
+  if (!bgmGain) return;           // v63: 対象は GainNode。未接続なら何もしない
 
   cancelFade(); // 進行中のフェードを止めてから、新しいフェードアウトを始める
-  const target = currentAudio;
-  const startVol = target.volume;
+  const startVol = bgmGain.gain.value;
   const steps = Math.max(1, Math.round(ms / FADE_TICK_MS));
   let step = 0;
 
   fadeTimer = setInterval(() => {
     step++;
     const p = Math.min(1, step / steps);
-    target.volume = clampVol(startVol * Math.cos(p * Math.PI / 2));
-
+    // cos 曲線で落とす。フェードインの sin と対になり、合計の音量が一定に保たれる。
+    bgmGain.gain.value = clampVol(startVol * Math.cos(p * Math.PI / 2));
     if (p >= 1 || step > steps + 20) {
       clearInterval(fadeTimer);
       fadeTimer = null;
-      target.volume = 0;
+      bgmGain.gain.value = 0;
     }
   }, FADE_TICK_MS);
 }
 
-// v54 フェードイン用
 // 曲の開始時に、0 から TARGET_VOLUME へ上げる。
+// v63: フェードアウトと同じく、音量は GainNode 側で動かす。
 function startFadeInOnly() {
   const ms = fadeMs();
+  if (!bgmGain) return;           // v63: 対象は GainNode。未接続なら何もしない
   if (!Number.isFinite(ms) || ms <= 0) {
-    if (currentAudio) currentAudio.volume = TARGET_VOLUME;
+    // フェード無効の設定でも音が出るよう、目標値を直接入れる。
+    bgmGain.gain.value = TARGET_VOLUME;
     return;
   }
-  if (!currentAudio) return;
 
-  const target = currentAudio;
   const steps = Math.max(1, Math.round(ms / FADE_TICK_MS));
   let step = 0;
 
   fadeTimer = setInterval(() => {
     step++;
     const p = Math.min(1, step / steps);
-    target.volume = clampVol(TARGET_VOLUME * Math.sin(p * Math.PI / 2));
+    // sin 曲線で上げる。フェードアウトの cos と対になる。
+    bgmGain.gain.value = clampVol(TARGET_VOLUME * Math.sin(p * Math.PI / 2));
     if (p >= 1 || step > steps + 20) {
       clearInterval(fadeTimer);
       fadeTimer = null;
-      target.volume = TARGET_VOLUME;
+      bgmGain.gain.value = TARGET_VOLUME;
     }
   }, FADE_TICK_MS);
 }
@@ -671,6 +672,32 @@ function ensureSoundContext() {
     console.warn('AudioContextの初期化に失敗:', e);
   }
 }
+
+// v63: iOSでは HTMLMediaElement.volume の代入が無視されるため、
+//      bgmAudio を AudioContext に通し、GainNode で音量を制御する。
+//      createMediaElementSource は要素1つにつき一度しか呼べないので、
+//      bgmGain が既にあれば何もしない。
+let bgmSource = null;
+let bgmGain = null;
+
+function ensureBgmGain() {
+  ensureSoundContext();
+  if (!endSoundCtx) return null;
+  if (bgmGain) return bgmGain;
+
+  try {
+    bgmSource = endSoundCtx.createMediaElementSource(bgmAudio);
+    bgmGain = endSoundCtx.createGain();
+    bgmGain.gain.value = TARGET_VOLUME;
+    bgmSource.connect(bgmGain);
+    bgmGain.connect(endSoundCtx.destination);
+  } catch (e) {
+    console.warn('BGMのGainNode接続に失敗:', e);
+    bgmGain = null;
+  }
+  return bgmGain;
+}
+
 
 function playTone(notes, gainPeak) {
   try {
@@ -1242,7 +1269,8 @@ function stopAllTimers() {
 
 function setVolume(v) {
   TARGET_VOLUME = clampVol(v);
-  if (!fadeTimer && currentAudio) currentAudio.volume = TARGET_VOLUME;
+  // v63: 音量の実効値は GainNode 側で持つ。フェード中は上書きしない。
+  if (!fadeTimer && bgmGain) bgmGain.gain.value = TARGET_VOLUME;
   const lbl = document.getElementById('volume-value');
   if (lbl) lbl.textContent = Math.round(TARGET_VOLUME * 100) + '%';
   const slider = document.getElementById('volume-slider');
@@ -1708,4 +1736,4 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatusDisplay();
 });
 
-console.log('ScriptBGM.js v62 読み込み完了');
+console.log('ScriptBGM.js v63 読み込み完了');
