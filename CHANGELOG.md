@@ -3,9 +3,103 @@
 異世界BGM25Timer の変更履歴。
 
 ---
+### v59 — フェードの二重発火ガード
 
-## CHANGELOG（続き）
+**症状**
+（未発生。予防的修正）
 
+**原因**
+`startFadeOutOnly` の呼び出し元が区間終了と曲送りの2箇所になった。同じtickで両方が発火すると `fadeTimer` が上書きされ、先に走っていた `setInterval` が停止されないまま残る。
+
+**変更**
+- `startFadeOutOnly` の冒頭に `if (fadeTimer) return;` を追加。`cancelFade(false)` より前に置く
+
+---
+
+### v58 — デバッグ出力の整理
+
+**変更**
+- `console.log('合図音判定', ...)` を削除。原因特定済み
+- `console.log('fadeout start', ...)` を削除。v54の確認用
+- 曲リスト読み込み完了ログを削除。異常時は `playPhaseTrack` の空リスト警告が出るため不要
+- `adjustSpeed` のコメントからクロスフェードへの言及を削除
+
+---
+
+### v57 — 未使用変数の削除
+
+**原因**
+v53で選曲判定が `visitedWork` / `visitedRest` に移った際、`lastWorkPhase` / `lastRestPhase` を読む側が消えたが、代入だけが残っていた。
+
+**変更**
+- `resetBgmState` から `lastWorkPhase` / `lastRestPhase` への代入2行を削除
+
+---
+
+### v56 — 「全て停止」後に2曲目から始まる
+
+**症状**
+「全て停止」の後に再生を始めると、1曲目ではなく2曲目から鳴る。
+
+**原因**
+v52で曲順インデックスのリセットを追加したが、v53で導入した `visitedWork` / `visitedRest` は戻していなかった。フラグが `true` のまま残るため、`applySegmentMusic` が `switchMusic` を通り、インデックス0から1へ進んでいた。
+
+**変更**
+- `resetBgmState` の `PHASES.forEach` で `visitedWork[p]` / `visitedRest[p]` を `false` に戻す
+
+---
+
+### v55 — 25分/5分ボタンが反応しない
+
+**症状**
+25分・5分ボタンを押してもタイマーが起動しない。ステータス表示だけは更新される。
+
+**原因**
+v51.1 と同一。`startLoopSet` 用のログ行が `startWorkOnly` / `startRestOnly` にも貼られていた。v51.1 では `startContinuousLoop` の1箇所のみ修正しており、残る2箇所が見落とされていた。存在しない `count` を参照して `ReferenceError` が発生し、以降の処理が停止していた。
+
+**変更**
+- `startWorkOnly` / `startRestOnly` から該当行を削除
+
+---
+
+### v54 — フェードイン・フェードアウトの追加
+
+**変更**
+- `startFadeInOnly` を新規追加。`fadeMs()` が0以下の場合は `TARGET_VOLUME` を直接代入する
+- `playAudioFile` の `volume` 初期値を `TARGET_VOLUME` から `0` に変更。`play()` の解決後に `startFadeInOnly` を呼ぶ
+- `startCountdown` に曲送りの先行フェードアウト判定を追加。`trackRemaining` が `fadeSec` 秒を切った時点で発火する
+- フェード時間の刻みを0.5秒から1秒に変更。発火が `Math.max(1, ...)` で1秒前に固定されるため、小数値では設定と実挙動がずれていた
+- 初期化処理に残っていた古いバージョン表記（v41）のログを削除
+- iOSで `volume` の代入が有効であることを実機で確認。Web Audio API への移行は不要と判断
+
+### v53 — 連続ループでの曲順の記憶
+
+**症状**
+連続ループ中、フェーズが切り替わるたびに曲順が意図しない位置から始まる。
+
+**原因**
+区間開始時に次の曲へ進めるかどうかの判定が、フェーズ単位で保持されていなかった。
+
+**変更**
+- `visitedWork` / `visitedRest` を導入し、フェーズごとに一度でも再生したかを記憶する。初回は現在のインデックス（先頭）のまま鳴らし、2回目以降は次の曲へ進める
+- ループ完了時にインデックスもリセットするよう修正
+
+---
+
+### v52 — 「すべて停止」での曲順リセット
+
+**症状**
+「すべて停止」の後に再生を始めると、前回の続きの曲から始まる。
+
+**原因**
+`resetBgmState` が `currentMusicIndex` / `currentRestIndex` に触れていなかった。
+
+**変更**
+- `resetBgmState` の `PHASES.forEach` で両インデックスを0に戻す
+- 不要なデバッグログを削除
+- バージョン番号の表記を更新
+
+---
 ### v51.1 — 貼り間違いの修正
 
 **症状**
