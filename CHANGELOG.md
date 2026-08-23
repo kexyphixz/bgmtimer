@@ -3,6 +3,46 @@
 異世界BGM25Timer の変更履歴。
 
 ---
+### v62 — フェード発火の取りこぼしを防止
+
+**症状**
+曲送り・区間終了のフェードアウトが、起きたり起きなかったりする。
+
+**原因**
+発火判定が等値（`===`）だった。`setInterval` は次のtickまでの時間を保証しないため、`src` の差し替えやデコードでメインスレッドが詰まると秒が飛ぶ（実際に 32秒→30秒 の飛びを確認）。判定値をまたいで飛ぶと、一度も一致せずフェードが起きない。
+
+**変更**
+- 曲送り・区間終了の両判定を `<=` に変更し、`TM.trackFadeStarted` / `TM.segFadeStarted` で一度だけ発火させる形にした
+- 曲を切り替えた直後に `trackFadeStarted` を戻す
+- `applySegmentMusic` の末尾と `resetBgmState` で両フラグを戻す
+- `TM` の宣言に両フラグを追加。あわせて `trackSwitchesTarget` の行末にカンマが無く、追加時に構文エラーになった点を修正
+- 区間終了の判定が `if (TM.remaining > 0 && TM.trackSlotSeconds)` の内側に入り込んでいたため、外へ出した。曲送りが無効な区間（休憩など）でフェードアウトが起きなくなっていた
+
+---
+
+### v61 — retiringAudios の削除
+
+**原因**
+v48でクロスフェードを廃止した際、`retiringAudios` を扱うコードが残っていた。`playAudioFile` が毎回この配列を空にするため、`forEach` は常に何も回さない。`cancelFade` の `finishOutgoing` 分岐も同様に死んでいた。
+
+**変更**
+- `retiringAudios` の宣言と参照6箇所をすべて削除
+- `cancelFade` から `finishOutgoing` の分岐と引数を廃止。`fadeTimer` の停止のみを行う関数にした
+- 呼び出し側4箇所を `cancelFade()` に統一
+- `startCrossfade` 削除済みを示すコメントを削除
+
+**備考**
+作業中、`startFadeOutOnly` 内でコメントを差し替えた際に改行が失われ、`const target = currentAudio;` がコメントに取り込まれる事故が起きた。`ReferenceError` で `setInterval` に到達せず、フェードアウトが無効になっていた。エディタの折り返しを有効にして再発を防ぐ。
+
+---
+
+### v60 — フェード時間の表示と保存値の丸め
+
+**変更**
+- `syncSettingsUI` で `fadeSec` が0のとき「なし」と表示するよう変更。「0秒」では機能が切れていることが伝わらないため
+- `loadSettings` で `fadeSec` を整数かつ `FADE_SEC_RANGE` の範囲内に丸める処理を追加。刻みを1秒に変える前に保存された小数値や、`localStorage` の手動改変に備える
+---
+
 ### v59 — フェードの二重発火ガード
 
 **症状**
