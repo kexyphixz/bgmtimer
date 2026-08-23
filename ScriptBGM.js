@@ -1184,8 +1184,7 @@ function resetBgmState() {
   currentPlayingPhase = null;
   currentSegmentType = null;
   currentPlayingLabel = null;
-  lastWorkPhase = null; // ★重要: これがないと前回の続きと誤認識され、
-  lastRestPhase = null; //   新しい開始のはずが2曲目から始まってしまう
+//v57 呼ばれてないのを削除
 
   // v52: 曲順のインデックスもここで戻す。これがないと「すべて停止」の後に
   // 再生を始めたとき、前回の続きの曲から始まってしまう。
@@ -1704,4 +1703,4 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatusDisplay();
 });
 
-console.log('ScriptBGM.js v56 読み込み完了');
+console.log('ScriptBGM.js v57 読み込み完了');
