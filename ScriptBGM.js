@@ -398,7 +398,9 @@ const TM = {
   trackSlotSeconds: null,   // 1曲あたりに割り当てる秒数
   trackRemaining: null,     // 次の強制切り替えまでの残り秒
   trackSwitchesDone: 0,     // この区間で強制切り替えした回数
-  trackSwitchesTarget: 0    // この区間で必要な強制切り替え回数（曲数-1）
+  trackSwitchesTarget: 0,    // この区間で必要な強制切り替え回数（曲数-1）
+  segFadeStarted: false,   // v62: 区間終了のフェードを一度だけ発火させる
+  trackFadeStarted: false, // v62: 曲送りのフェードを一度だけ発火させる
 };
 
 let activeButton = null;
@@ -845,8 +847,6 @@ function applySegmentMusic() {
     }
     visitedWork[phase] = true;
   }
-
-
   // ---- 区間内の均等分割セットアップ ----
   // 例: 作業曲を4曲選択・作業時間25分なら、25分÷4＝約6分ごとに次の曲へ。
   // v40: 休憩は effectiveRestList が常に長さ1を返すので、必ず下の else に
@@ -862,6 +862,10 @@ function applySegmentMusic() {
   }
   TM.trackRemaining = TM.trackSlotSeconds;
   TM.trackSwitchesDone = 0;
+  // v62: フェード発火のフラグは区間ごとに戻す。
+  TM.segFadeStarted = false;
+  TM.trackFadeStarted = false;
+
 }
 
 // 区間内での曲送り（均等分割による強制切り替え）専用。
@@ -899,30 +903,31 @@ function startCountdown() {
     if (TM.remaining > 0 && TM.trackSlotSeconds) {
       TM.trackRemaining--;
 
-      // v54　曲送りのフェードアウト
-      if (TM.trackRemaining === Math.max(1, Math.ceil(SETTINGS.fadeSec))
-        && TM.trackSwitchesDone < TM.trackSwitchesTarget
-        && currentAudio) {
-      startFadeOutOnly();
+      // v62: 曲送りの fadeSec 秒前に、前の曲を落とし始める。
+      //      等値（===）だと setInterval が間引かれて秒が飛んだとき
+      //      一度も一致しないため、<= とフラグで一度だけ発火させる。
+      if (TM.trackRemaining <= Math.max(1, Math.ceil(SETTINGS.fadeSec))
+          && !TM.trackFadeStarted
+          && TM.trackSwitchesDone < TM.trackSwitchesTarget
+          && currentAudio) {
+        TM.trackFadeStarted = true;
+        startFadeOutOnly();
       }
-    // ここまで
 
       if (TM.trackRemaining <= 0 && TM.trackSwitchesDone < TM.trackSwitchesTarget) {
         advanceCurrentTrack();
         TM.trackSwitchesDone++;
         TM.trackRemaining = TM.trackSlotSeconds;
+        TM.trackFadeStarted = false; // 次の曲送りに備えて戻す
       }
     }
 
-    if (TM.remaining <= Math.max(1, Math.ceil(SETTINGS.fadeSec))
-      && !TM.fadeStarted && currentAudio) {
-    TM.fadeStarted = true;
-    startFadeOutOnly();
-  }
-
     // 区間終了の fadeSec 秒前になったら、前の曲だけ先に落とし始める。
     // 境界に達した時点で音量0になっているので、次の曲は即切りで立ち上がる。
-    if (TM.remaining === Math.max(1, Math.ceil(SETTINGS.fadeSec)) && currentAudio) {
+    // v62: 上と同じ理由で <= + フラグへ変更。
+    if (TM.remaining <= Math.max(1, Math.ceil(SETTINGS.fadeSec))
+        && !TM.segFadeStarted && currentAudio) {
+      TM.segFadeStarted = true;
       startFadeOutOnly();
     }
 
@@ -1179,13 +1184,12 @@ function resumeTimer() {
 // もう一度押してトグル停止する時に呼ぶ。
 function resetBgmState() {
   clearTimers();
-
   stopMusic();
   clearPlayingMark();
   currentPlayingPhase = null;
   currentSegmentType = null;
   currentPlayingLabel = null;
-//v57 呼ばれてないのを削除
+  //v57 呼ばれてないのを削除
 
   // v52: 曲順のインデックスもここで戻す。これがないと「すべて停止」の後に
   // 再生を始めたとき、前回の続きの曲から始まってしまう。
@@ -1194,7 +1198,6 @@ function resetBgmState() {
     currentRestIndex[p] = 0;
     visitedWork[p] = false;
     visitedRest[p] = false;
-
   });
 
   // タイマーを起動する系のボタンは全部 timer-action-btn クラスを持たせてあるので、
@@ -1215,6 +1218,8 @@ function resetBgmState() {
   TM.trackRemaining = null;
   TM.trackSwitchesDone = 0;
   TM.trackSwitchesTarget = 0;
+  TM.segFadeStarted = false;   // v62
+  TM.trackFadeStarted = false; // v62
 
   activeButton = null;
 
@@ -1703,4 +1708,4 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatusDisplay();
 });
 
-console.log('ScriptBGM.js v61 読み込み完了');
+console.log('ScriptBGM.js v62 読み込み完了');
