@@ -1091,7 +1091,6 @@ function startLoopSet(phase, count, btn) {
 // 「25分」ボタン。作業曲だけを1回、workMin分再生して終了。
 function startWorkOnly(phase, btn) {
   console.log(`${phase} 作業のみ再生（単発）`);
-  console.log(`${phase} ループ開始 x${count === 0 ? '無制限' : count}`);
   ensureSoundContext();
   if (btn && btn === activeButton) { resetBgmState(); return; }
 
@@ -1114,8 +1113,6 @@ function startWorkOnly(phase, btn) {
 // 「5分」ボタン。休憩曲だけを1回、restMin分再生して終了。
 function startRestOnly(phase, btn) {
   console.log(`${phase} 休憩のみ再生（単発）`);
-  //v51
-  console.log(`${phase} ループ開始 x${count === 0 ? '無制限' : count}`);
   ensureSoundContext();
   if (btn && btn === activeButton) { resetBgmState(); return; }
 
@@ -1731,4 +1728,4 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatusDisplay();
 });
 
-console.log('ScriptBGM.js v54 読み込み完了');
+console.log('ScriptBGM.js v55 読み込み完了');
