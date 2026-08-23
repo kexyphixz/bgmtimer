@@ -201,7 +201,7 @@ function effectiveRestList(phase) {
   return [found || all[0]];
 }
 
-// ---- 自然音（重ねがけレイヤー。BGM/クロスフェード系とは完全に独立） ----
+// ---- 自然音（重ねがけレイヤー。BGM/フェード系とは完全に独立） ----
 const NATURE_SOUNDS = {
   river:     { file: 'sound/n1_river.mp3',     label: '川' },
   waterfall: { file: 'sound/n2_waterfall.mp3', label: '滝' },
@@ -224,7 +224,7 @@ const DEFAULT_SETTINGS = {
   natureVol: 0.5,  // 自然音 起動時音量
   workMin: 25,     // 作業区間（分）
   restMin: 5,      // 休憩区間（分）
-  fadeSec: 2.5,    // クロスフェード（秒）
+  fadeSec: 2.5,    // フェード（秒）
   speed: 1.0,      // BGM再生スピード（0.75〜1.25）
   endSound: true   // 合図音（区間の切り替わり・全体の終了）のオン/オフ
 };
@@ -366,7 +366,7 @@ function adjustLoopCount(phase, delta) {
 }
 
 
-// ---- クロスフェード設定 ----
+// ---- フェード設定 ----
 let TARGET_VOLUME = DEFAULT_SETTINGS.bgmVol; // 起動時に SETTINGS で上書き
 const FADE_TICK_MS = 50;                     // フェード更新間隔
 
@@ -921,7 +921,6 @@ function startCountdown() {
     // 区間終了の fadeSec 秒前になったら、前の曲だけ先に落とし始める。
     // 境界に達した時点で音量0になっているので、次の曲は即切りで立ち上がる。
     if (TM.remaining === Math.max(1, Math.ceil(SETTINGS.fadeSec)) && currentAudio) {
-      console.log('fadeout start', TM.remaining, SETTINGS.fadeSec, currentAudio.volume);
       startFadeOutOnly();
     }
 
@@ -1676,7 +1675,6 @@ document.addEventListener('DOMContentLoaded', function () {
   loadAllTracks().then(() => {
     normalizeTrackSelection();
     refreshAllPhaseTrackLabels();
-    console.log('曲リストの読み込み完了:', musicTracks, restTracks);
   });
 
   // 背景タップで閉じる（モーダル本体のクリックは無視）
@@ -1703,4 +1701,4 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatusDisplay();
 });
 
-console.log('ScriptBGM.js v57 読み込み完了');
+console.log('ScriptBGM.js v58 読み込み完了');
