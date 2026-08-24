@@ -272,7 +272,15 @@ function toggleNature(key, btn) {
   if (!s) return;
   const a = new Audio(s.file);
   a.loop = true;
-  a.volume = natureVolume;
+  // v64: 音量は GainNode 側で持つ。要素の volume は iOS で効かない。
+  const g = ensureNatureGain();
+  if (g) {
+    try {
+      endSoundCtx.createMediaElementSource(a).connect(g);
+    } catch (e) {
+      console.warn('自然音のノード接続に失敗:', e);
+    }
+  }
   a.addEventListener('error', (e) => console.error(`自然音の読み込みエラー: ${s.file}`, e));
   a.play()
     .then(() => console.log(`自然音再生: ${s.file}`))
@@ -284,7 +292,8 @@ function toggleNature(key, btn) {
 // 自然音の音量を一括変更
 function setNatureVolume(v) {
   natureVolume = clampVol(v);
-  Object.values(natureAudios).forEach((a) => { a.volume = natureVolume; });
+// v64: 実効値は GainNode 側。
+if (natureGain) natureGain.gain.value = natureVolume;
   const lbl = document.getElementById('nature-volume-value');
   if (lbl) lbl.textContent = Math.round(natureVolume * 100) + '%';
   const slider = document.getElementById('nature-volume-slider');
@@ -697,7 +706,25 @@ function ensureBgmGain() {
   }
   return bgmGain;
 }
+// v64: 自然音も iOS で volume が効かないため GainNode を通す。
+//      音量は一括変更のみなので、全要素を1つの GainNode に集約する。
+let natureGain = null;
 
+function ensureNatureGain() {
+  ensureSoundContext();
+  if (!endSoundCtx) return null;
+  if (natureGain) return natureGain;
+
+  try {
+    natureGain = endSoundCtx.createGain();
+    natureGain.gain.value = natureVolume;
+    natureGain.connect(endSoundCtx.destination);
+  } catch (e) {
+    console.warn('自然音のGainNode接続に失敗:', e);
+    natureGain = null;
+  }
+  return natureGain;
+}
 
 function playTone(notes, gainPeak) {
   try {
@@ -1736,4 +1763,4 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatusDisplay();
 });
 
-console.log('ScriptBGM.js v63 読み込み完了');
+console.log('ScriptBGM.js v64 読み込み完了');
