@@ -1,4 +1,5 @@
-// 異世界BGM25Timer - ScriptBGM.js
+// 異世界BGM25Timer - scriptBGM.js
+const APP_VERSION = 'v66';
 // =====================================================================
 // ---- 時間帯の定義（他の多くの処理がこれを参照するので最初に置く） ----
 const PHASES = ['morning', 'noon', 'night'];
@@ -37,24 +38,24 @@ const TRACK_CREDITS = {
   'morning/morning3.mp3': ARTISTS.a,
   'morning/morning4.mp3': ARTISTS.a,
   //朝　休憩
-  'morningrest/Reposons-un-Peu.mp3': ARTISTS.a,
-  'morningrest/涼風のシュトラールブルク.mp3': ARTISTS.a,
+  'morningrest/morningrest1.mp3': ARTISTS.a,
+  'morningrest/morningrest2.mp3': ARTISTS.a,
   //昼　作業
-  'noon/今日から私はこの街の人.mp3':ARTISTS.b,
-  'noon/僕らの街.mp3':ARTISTS.b,
-  'noon/全体マップ.mp3':ARTISTS.b,
-  'noon/晴天の資材集め.mp3':ARTISTS.b,
+  'noon/noon1.mp3':ARTISTS.b,
+  'noon/noon2.mp3':ARTISTS.b,
+  'noon/noon3.mp3':ARTISTS.b,
+  'noon/noon4.mp3':ARTISTS.b,
   //昼 休憩
-  'noonrest/ゆっくり時間が流れる町.mp3': ARTISTS.b,
-  'noonrest/道なりに.mp3': ARTISTS.b,
+  'noonrest/noonrest1.mp3': ARTISTS.b,
+  'noonrest/noonrest2.mp3': ARTISTS.b,
   //夜　作業
-  'night/Orecchiette-alla-Pugliese.mp3':ARTISTS.a,
-  'night/Triple-Sec.mp3':ARTISTS.a,
-  'night/Cafe-et-Croissant.mp3':ARTISTS.a,
-  'night/Casarecce-cacio-e-pepe.mp3':ARTISTS.a,
+  'night/night1.mp3':ARTISTS.a,
+  'night/night2.mp3':ARTISTS.a,
+  'night/night3.mp3':ARTISTS.a,
+  'night/night4.mp3':ARTISTS.a,
   //夜　休憩
-  'nightrest/Midnight-Tea-Time.mp3':ARTISTS.a,
-  'nightrest/Nuit-de-Strahlburg.mp3':ARTISTS.a,
+  'nightrest/nightrest1.mp3':ARTISTS.a,
+  'nightrest/nightrest2.mp3':ARTISTS.a,
   //自然音
   'sound/n1_river.mp3': ARTISTS.d,
   'sound/n2_waterfall.mp3': ARTISTS.c,
@@ -1525,6 +1526,10 @@ function syncSettingsUI() {
 
   const endEl = document.getElementById('set-end-sound');
   if (endEl) endEl.checked = SETTINGS.endSound;
+
+  const info = document.getElementById('app-info');
+  if (info) info.textContent = `BGMタイマー ${APP_VERSION} ／ 設定はこの端末（ブラウザ）にのみ保存されます。`;
+
 }
 
 // --- 各設定の変更ハンドラ（即時保存・即時反映） ---
@@ -1763,4 +1768,4 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatusDisplay();
 });
 
-console.log('ScriptBGM.js v64 読み込み完了');
+console.log(`scriptBGM.js ${APP_VERSION} 読み込み完了`);
