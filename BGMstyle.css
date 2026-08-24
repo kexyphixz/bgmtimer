@@ -234,7 +234,7 @@ body {
 }
 
 /* 停止中は「♪4曲」（選択中の曲数）、再生中は「♪3」（実際の曲番号）。
-   切り替えは ScriptBGM.js 側が行う。 */
+   切り替えは scriptBGM.js 側が行う。 */
 .phase-track {
   font-size: 0.65rem;
   font-weight: 700;
