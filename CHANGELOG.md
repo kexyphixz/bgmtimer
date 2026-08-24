@@ -3,6 +3,49 @@
 異世界BGM25Timer の変更履歴。
 
 ---
+### v64 — 自然音の音量制御を GainNode に移行
+
+**症状**
+iPhone で自然音の音量スライダーが効かない。Mac Safari では効く。
+
+**原因**
+v63 と同一。iOS では `HTMLMediaElement.volume` への代入が無視される。
+
+**変更**
+- `ensureNatureGain` を追加。自然音は音量の一括変更しかしないため、全要素を1つの GainNode に集約する
+- 自然音の再生時に `createMediaElementSource` で要素を GainNode へ接続。要素は再生のたびに `new Audio()` で作られるため、「1要素につき1回」の制限には触れない
+- `setNatureVolume` の要素ループを `natureGain.gain.value` への代入に置き換え
+
+**備考**
+BGM と自然音で GainNode を分けているため、音量は独立して制御される。接続先はどちらも同じ `destination`。
+
+---
+
+### v63 — BGMの音量制御を GainNode に移行
+
+**症状**
+iPhone（GitHub Pages経由）で、フェードイン・フェードアウトが両方とも効かない。BGMの音量スライダーも効かない。Mac Safari、Firefox、Android では正常に動作する。
+
+**原因**
+iOS Safari では `HTMLMediaElement.volume` への代入が無視され、読み出すと常に1が返る。Apple 公式の仕様で、音量は物理ボタンによるユーザー操作に限定されている。Mac Safari は設定・読み出しの両方が可能なため、開発環境では発覚しなかった。
+
+**変更**
+- `ensureBgmGain` を追加。`bgmAudio` を `createMediaElementSource` で AudioContext に通し、GainNode 経由で `destination` へ接続する。`createMediaElementSource` は要素1つにつき一度しか呼べないため、`bgmGain` が既にあれば何もしない
+- AudioContext は合図音用の `endSoundCtx` を流用。新たに作ると iOS で複数コンテキストが競合するため
+- `playAudioFile` の冒頭で `ensureBgmGain()` を呼ぶ
+- 音量に触る箇所をすべて `bgmGain.gain.value` に置き換え
+  - `setVolume`
+  - `startFadeOutOnly`（開始値の取得、ループ内、終了時）
+  - `startFadeInOnly`（フェード無効時、ループ内、終了時）
+  - `playAudioFile` の開始音量
+- フェード関数の早期returnの判定を `currentAudio` から `bgmGain` に変更
+
+**備考**
+`createMediaElementSource` を呼んだ時点で出力経路が AudioContext 側に移り、以降 `bgmAudio.volume` は実効の音量に影響しなくなる。接続直後に音量調節が効かなくなるのは想定どおりの挙動。
+
+`setInterval` によるフェードの実装は変更していない。Web Audio の `linearRampToValueAtTime` を使えばタイマーの間引きに影響されなくなるが、差分を小さく保つため今回は見送った。
+
+---
 ### v62 — フェード発火の取りこぼしを防止
 
 **症状**
