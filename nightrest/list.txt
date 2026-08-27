@@ -1,2 +1,2 @@
-nightrest1.mp3,Midnight-Tea-Time
-nightrest2.mp3,Nuit-de-Strahlburg
+nightrest1.mp3,今日は雨の日
+nightrest2.mp3,旅の終わり

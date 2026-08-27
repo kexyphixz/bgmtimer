@@ -1,3 +1,2 @@
-noonrest1.mp3,ゆっくり時間が流れる町
-noonrest2.mp3,道なりに
-
+noonrest1.mp3,切なき片思い
+noonrest2.mp3,また、明日

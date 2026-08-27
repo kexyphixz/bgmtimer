@@ -1,4 +1,4 @@
-night1.mp3,Orecchiette-alla-Pugliese
-night2.mp3,Triple-Sec
-night3.mp3,Cafe-et-Croissant
-night4.mp3,Casarecce-cacio-e-pepe
+night1.mp3,芸術家が集う街
+night2.mp3,夜の探偵
+night3.mp3,摩天楼の裏通り
+night4.mp3,Play of Casino

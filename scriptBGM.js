@@ -25,10 +25,9 @@ const TRACK_FOLDERS = {
 // 作者が少数なので、先に ARTISTS にまとめて各曲から参照する。
 // URL を修正するときも1箇所で済み、曲が増えても作者情報は書き直さない。
 const ARTISTS = {
-  a: { artist: '南雲莉翠（なぐもりず）様', url: 'https://nagumorizu.com' },
-  b: { artist: '音楽の卵 様', url: 'https://ontama-m.com/index.html' },
-  c: { artist: '効果音ラボ 様', url: 'https://soundeffect-lab.info' },
-  d: { artist: 'ポケットサウンド 様', url: 'https://pocket-se.info'}
+  a: { artist: 'かまタマゴ様', url: 'https://kamatamago.com' },
+  b: { artist: 'ポケットサウンド 様', url: 'https://pocket-se.info'},
+  c: { artist: '効果音ラボ 様', url: 'https://soundeffect-lab.info' }
 };
 
 const TRACK_CREDITS = {
@@ -41,13 +40,13 @@ const TRACK_CREDITS = {
   'morningrest/morningrest1.mp3': ARTISTS.a,
   'morningrest/morningrest2.mp3': ARTISTS.a,
   //昼　作業
-  'noon/noon1.mp3':ARTISTS.b,
-  'noon/noon2.mp3':ARTISTS.b,
-  'noon/noon3.mp3':ARTISTS.b,
-  'noon/noon4.mp3':ARTISTS.b,
+  'noon/noon1.mp3':ARTISTS.a,
+  'noon/noon2.mp3':ARTISTS.a,
+  'noon/noon3.mp3':ARTISTS.a,
+  'noon/noon4.mp3':ARTISTS.a,
   //昼 休憩
-  'noonrest/noonrest1.mp3': ARTISTS.b,
-  'noonrest/noonrest2.mp3': ARTISTS.b,
+  'noonrest/noonrest1.mp3': ARTISTS.a,
+  'noonrest/noonrest2.mp3': ARTISTS.a,
   //夜　作業
   'night/night1.mp3':ARTISTS.a,
   'night/night2.mp3':ARTISTS.a,
@@ -57,7 +56,7 @@ const TRACK_CREDITS = {
   'nightrest/nightrest1.mp3':ARTISTS.a,
   'nightrest/nightrest2.mp3':ARTISTS.a,
   //自然音
-  'sound/n1_river.mp3': ARTISTS.d,
+  'sound/n1_river.mp3': ARTISTS.b,
   'sound/n2_waterfall.mp3': ARTISTS.c,
   'sound/n3_waves.mp3': ARTISTS.c,
   'sound/n4_campfire.mp3': ARTISTS.c,
@@ -596,7 +595,7 @@ function playPhaseTrack(phase, isRest, advance, immediate = false) {
   // 選択を変えた直後などで範囲外になっていたら先頭へ戻す
   if (indexByPhase[phase] >= list.length || indexByPhase[phase] < 0) indexByPhase[phase] = 0;
 
-    // v47: list の要素が { path, title } になったため、track として受けて
+  // v47: list の要素が { path, title } になったため、track として受けて
   // 再生には path、表示には title を使う。
   const track = list[indexByPhase[phase]];
   const file = track.path;
@@ -615,8 +614,8 @@ function playPhaseTrack(phase, isRest, advance, immediate = false) {
     ? `${LABEL_BY_PHASE[phase]}(休)${dispNo}`
     : `${LABEL_BY_PHASE[phase]}${dispNo}`;
 
- // 行内の♪表示は作業曲の時だけ更新する。
-  // 「2/3曲目」＝選んだ3曲のうち2曲目。停止中は「選曲数: 3」に戻る。
+// 行内の♪表示は作業曲の時だけ更新する。
+// 「2/3曲目」＝選んだ3曲のうち2曲目。停止中は「選曲数: 3」に戻る。
   if (!isRest) {
     const trackEl = document.getElementById(`${phase}-track`);
     if (trackEl) trackEl.textContent = `${indexByPhase[phase] + 1}/${list.length}曲目`;
@@ -950,17 +949,22 @@ function startCountdown() {
   updateDisplay();
   setDisplayActive();
 
+  // v67: setInterval は次のtickまでの時間を保証しないため、remaining を
+  //      毎tick 1ずつ減らすと処理が詰まったぶんだけ表示がずれる。
+  //      区間の終了時刻を実時刻で持ち、そこからの差分で残りを出す。
+  //      一時停止からの再開でも、この行が呼び直されて基準が引き直される。
+  TM.endAt = Date.now() + TM.remaining * 1000;
+
   TM.intervalId = setInterval(() => {
-    TM.remaining--;
+    const prev = TM.remaining;
+    TM.remaining = Math.max(0, Math.ceil((TM.endAt - Date.now()) / 1000));
 
-    // 区間が終わる瞬間（remaining<=0）と同時に発火しないよう、
-    // remaining>0 のときだけ処理する。
+    // v67: tick が遅れて2秒以上進んだ場合も、曲送りの残り秒を同じだけ減らす。
+    const elapsed = Math.max(1, prev - TM.remaining);
+
     if (TM.remaining > 0 && TM.trackSlotSeconds) {
-      TM.trackRemaining--;
+      TM.trackRemaining -= elapsed;
 
-      // v62: 曲送りの fadeSec 秒前に、前の曲を落とし始める。
-      //      等値（===）だと setInterval が間引かれて秒が飛んだとき
-      //      一度も一致しないため、<= とフラグで一度だけ発火させる。
       if (TM.trackRemaining <= Math.max(1, Math.ceil(SETTINGS.fadeSec))
           && !TM.trackFadeStarted
           && TM.trackSwitchesDone < TM.trackSwitchesTarget
@@ -973,13 +977,10 @@ function startCountdown() {
         advanceCurrentTrack();
         TM.trackSwitchesDone++;
         TM.trackRemaining = TM.trackSlotSeconds;
-        TM.trackFadeStarted = false; // 次の曲送りに備えて戻す
+        TM.trackFadeStarted = false;
       }
     }
 
-    // 区間終了の fadeSec 秒前になったら、前の曲だけ先に落とし始める。
-    // 境界に達した時点で音量0になっているので、次の曲は即切りで立ち上がる。
-    // v62: 上と同じ理由で <= + フラグへ変更。
     if (TM.remaining <= Math.max(1, Math.ceil(SETTINGS.fadeSec))
         && !TM.segFadeStarted && currentAudio) {
       TM.segFadeStarted = true;
@@ -1206,7 +1207,7 @@ function pauseTimer() {
 
   cancelFade();
   if (currentAudio) {
-    currentAudio.volume = TARGET_VOLUME;
+    if (bgmGain) bgmGain.gain.value = TARGET_VOLUME;  // v67: GainNode 経由に修正
     currentAudio.pause();
   }
 
@@ -1217,7 +1218,7 @@ function pauseTimer() {
 
 function resumeTimer() {
   if (TM.status === 'paused') {
-//　2026/08/19 11:50ごろ　再開エラー対処
+//　再開エラー対処
     if (currentAudio) {
       currentAudio.play().catch(() => {
         currentAudio.load();
