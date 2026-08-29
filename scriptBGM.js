@@ -1,5 +1,5 @@
 // 異世界BGM25Timer - scriptBGM.js
-const APP_VERSION = 'v66';
+const APP_VERSION = 'v68';
 // =====================================================================
 // ---- 時間帯の定義（他の多くの処理がこれを参照するので最初に置く） ----
 const PHASES = ['morning', 'noon', 'night'];
@@ -25,10 +25,14 @@ const TRACK_FOLDERS = {
 // 作者が少数なので、先に ARTISTS にまとめて各曲から参照する。
 // URL を修正するときも1箇所で済み、曲が増えても作者情報は書き直さない。
 const ARTISTS = {
-  a: { artist: 'かまタマゴ様', url: 'https://kamatamago.com' },
-  b: { artist: 'ポケットサウンド 様', url: 'https://pocket-se.info'},
-  c: { artist: '効果音ラボ 様', url: 'https://soundeffect-lab.info' }
+  a: { artist: 'かまタマゴ 様', url: 'https://kamatamago.com' },
+  b: { artist: 'bruno.auzet 様', url: 'https://freesound.org/people/bruno.auzet/sounds/730154/' },//river
+  c: { artist: 'SuperStudioBR 様', url: 'https://freesound.org/people/SuperStudioBR/sounds/669180/ ' },//waterfall
+  d: { artist: 'carthny 様', url: ' https://freesound.org/people/carthny/sounds/592430/' },//waves
+  e: { artist: 'bokal 様', url: 'https://freesound.org/people/bokal/sounds/559580/'},//fire
+  f: { artist: 'InspectorJ 様', url: 'https://freesound.org/people/InspectorJ/sounds/321176/' },//rain
 };
+
 
 const TRACK_CREDITS = {
   //朝　作業
@@ -58,12 +62,9 @@ const TRACK_CREDITS = {
   //自然音
   'sound/n1_river.mp3': ARTISTS.b,
   'sound/n2_waterfall.mp3': ARTISTS.c,
-  'sound/n3_waves.mp3': ARTISTS.c,
-  'sound/n4_campfire.mp3': ARTISTS.c,
-  'sound/n5_insects.mp3': ARTISTS.c,
-  'sound/n6_higurashi.mp3': ARTISTS.c,
-  'sound/n7_windchime.mp3': ARTISTS.c,
-  'sound/n8_rain.mp3': ARTISTS.c,
+  'sound/n3_waves.mp3': ARTISTS.d,
+  'sound/n4_campfire.mp3': ARTISTS.e,
+  'sound/n5_rain.mp3': ARTISTS.e,
 };
 
 // folder/list.txt を読み込み、フォルダ名を先頭に付けたパスの配列を返す。
@@ -203,14 +204,11 @@ function effectiveRestList(phase) {
 
 // ---- 自然音（重ねがけレイヤー。BGM/フェード系とは完全に独立） ----
 const NATURE_SOUNDS = {
-  river:     { file: 'sound/n1_river.mp3',     label: '川' },
-  waterfall: { file: 'sound/n2_waterfall.mp3', label: '滝' },
-  waves:     { file: 'sound/n3_waves.mp3',     label: '波' },
-  campfire:  { file: 'sound/n4_campfire.mp3',  label: '焚き火' },
-  insects:   { file: 'sound/n5_insects.mp3',   label: '虫の声' },
-  higurashi: { file: 'sound/n6_higurashi.mp3', label: 'ひぐらし' },
-  windchime: { file: 'sound/n7_windchime.mp3', label: '風鈴' },
-  rain:      { file: 'sound/n8_rain.mp3',      label: '雨' }
+  river:     { file: 'sound/n1_river.mp3',     label: '川' , title: 'せせらぎ' },
+  waterfall: { file: 'sound/n2_waterfall.mp3', label: '滝' , title: '静かな滝'},
+  waves:     { file: 'sound/n3_waves.mp3',     label: '波' , title: '波打ち際'},
+  campfire:  { file: 'sound/n4_campfire.mp3',  label: '焚火' , title: 'キャンプファイアー'},
+  rain:      { file: 'sound/n5_rain.mp3',      label: '雨', title: '傘に当たる雨音' }
 };
 
 // =====================================================================
@@ -1702,7 +1700,7 @@ function renderCredits() {
     '自然音',
     Object.values(NATURE_SOUNDS).map((s) => ({
       fullPath: s.file,
-      title: s.label,
+      title: s.title,
       label: s.label
     }))
   );

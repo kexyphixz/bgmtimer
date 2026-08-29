@@ -37,20 +37,12 @@ BGM25Timer で使用している音源の一覧です。ダウンロード
 
 ## 自然音
 
-### 効果音ラボ 様(https://soundeffect-lab.info/)
-#### 利用規約(https://soundeffect-lab.info/agreement/)
-
-- 滝:n2_waterfall 滝1.mp3 2026年8月5日
-- 波:n3_waves 海岸4.mp3 2026年8月5日
-- 焚き火:n4_campfire たき火.mp3 2026年8月5日
-- ひぐらし:n5_higurashi 夏の山2.mp3 2025年1月27日
-- 虫の声:n6_insent 夏の田舎の夜.mp3 2026年8月5日
-- 風鈴:n7_windchirm 風鈴の鳴る家1.mp3 2026年8月5日
-- 雨:n8_rain 雨.mp3 2025年1月27日
-
-### ポケットサウンド 様(https://pocket-se.info/)
-#### 利用規約(https://pocket-se.info/rules/)
-- 川: n1_river.mp3 【効果音】川が流れるせせらぎ音＃２  2026年8月17日
+### freesound(https://freesound.org)
+- 川: n1_river.mp3　bruno.auzet 様, CC0, url: https://freesound.org/people/bruno.auzet/sounds/730154/
+- 滝: n2_waterfall.mp3  SuperStudioBR 様, CC BY, url: https://freesound.org/people/SuperStudioBR/sounds/669180/
+- 波: n3_waves.mp3　carthny 様, CC0, url: https://freesound.org/people/carthny/sounds/592430/ 
+- 焚き火: n4_campfire.mp3 bokal 様, CC0, url: https://freesound.org/people/bokal/sounds/559580/
+- 雨: n5_rain.mp3 InspectorJ 様, CC BY, url: https://freesound.org/people/InspectorJ/sounds/321176/ 
 
 ---
 
