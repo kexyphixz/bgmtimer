@@ -18,8 +18,8 @@ BGM25Timer で使用している音源の一覧です。ダウンロード
 - morningrest2: 目覚め
 
 - noon1: 港町の演奏家
-- noon2: 夏空ビーチ
-- noon3: 休日日和
+- noon2: 夏空ビーチ 2026.9.2 入手不可か？
+- noon3: 休日日和　
 - noon4: 大空アスレチック
 
 - noonrest1: 切なき片思い
@@ -38,12 +38,13 @@ BGM25Timer で使用している音源の一覧です。ダウンロード
 ## 自然音
 
 ### freesound(https://freesound.org)
-- 川: n1_river.mp3　bruno.auzet 様, CC0, url: https://freesound.org/people/bruno.auzet/sounds/730154/
-- 滝: n2_waterfall.mp3  SuperStudioBR 様, CC BY, url: https://freesound.org/people/SuperStudioBR/sounds/669180/
-- 波: n3_waves.mp3　carthny 様, CC0, url: https://freesound.org/people/carthny/sounds/592430/ 
-- 焚き火: n4_campfire.mp3 bokal 様, CC0, url: https://freesound.org/people/bokal/sounds/559580/
-- 雨: n5_rain.mp3 InspectorJ 様, CC BY, url: https://freesound.org/people/InspectorJ/sounds/321176/ 
+ ラベル名：ファイル名.m4a； 元の名; 作者名　様; 著作権種別(CC0 など); 個別URL
 
+- 川:   n1_river.m4a; Saliouse river murmur 1; bruno.auzet 様, CC0, url: https://freesound.org/people/bruno.auzet/sounds/730154/
+- 滝:   n2_waterfall.m4a; Brazilian_Waterfall_River; SuperStudioBR 様; CC BY; https://freesound.org/people/SuperStudioBR/sounds/669180/
+- 波:   n3_waves.m4a; 4. waves, close recording, beach, portugal.WAV; VMan533 様; CC0; https://freesound.org/people/VMan533/sounds/575902/
+- 火:   n4_fire.m4a; fire_crackling_oven ; Fasolt様; CC0;  https://freesound.org/people/Fasolt/sounds/91114/
+- 雨:   n5_rain.m4a; Rain water; karinalarasart 様; CC0; https://freesound.org/people/karinalarasart/sounds/483121/
 ---
 
 ## 謝辞
