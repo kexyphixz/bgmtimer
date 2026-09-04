@@ -9,36 +9,37 @@ BGM25Timer で使用している音源の一覧です。ダウンロード
 
 ### かまタマゴ様 (https://kamatamago.com) 
 #### 利用規約(https://kamatamago.com/sozai-rule/)
-- morning1: 夏一番
-- morning2: 新しいお店
-- morning3: 光を取り戻した中心街
-- morning4: 散歩日和
+- 曲項目: 曲名; 曲ファイル名
+- morning1: 夏一番; first-in-summer
+- morning2: 新しいお店; new-shop
+- morning3: 光を取り戻した中心街; The-city-center-that-regained-light
+- morning4: 散歩日和; Good-weather-for-a-walk
 
-- morningrest1: 少しリッチな朝
-- morningrest2: 目覚め
+- morningrest1: さよならは言わない; I-dont-say-goodbye
+- morningrest2: 少しリッチな朝; A-little-rich-morning
 
-- noon1: 港町の演奏家
-- noon2: 夏空ビーチ 2026.9.2 入手不可か？
-- noon3: 休日日和　
-- noon4: 大空アスレチック
+- noon1: 港町の演奏家; Port-town-performer
+- noon2: さわやかビーチ; refreshing-beach
+- noon3: 休日日和; Holiday-weather
+- noon4: 大空アスレチック; Sky-athletic
 
-- noonrest1: 切なき片思い
-- noonrest2: また、明日
+- noonrest1: 切なき片思い; Unrequited-Longing
+- noonrest2: また、明日; See-You-Tomorrow
 
-- night1: 芸術家が集う街
-- night2: 夜の探偵
-- night3: 摩天楼の裏通り
-- night4: Play of Casino
+- night1: 芸術家が集う街; A-city-where-artists-gather
+- night2: 夜の探偵; Night-detective
+- night3: 摩天楼の裏通り; Skyscraper-back-street
+- night4: Play of Casino; Skyscraper-back-street
 
-- nightrest1: 今日は雨の日
-- nightrest2: 旅の終わり
+- nightrest1: 今日は雨の日; today-is-a-rainy-day
+- nightrest2: 旅の終わり; The-end-of-the-journey
 
 ---
 
 ## 自然音
 
 ### freesound(https://freesound.org)
- ラベル名：ファイル名.m4a； 元の名; 作者名　様; 著作権種別(CC0 など); 個別URL
+- (ラベル名：ファイル名.m4a； 元の名; 作者名　様; 著作権種別(CC0 など); 個別URL)
 
 - 川:   n1_river.m4a; Saliouse river murmur 1; bruno.auzet 様, CC0, url: https://freesound.org/people/bruno.auzet/sounds/730154/
 - 滝:   n2_waterfall.m4a; Brazilian_Waterfall_River; SuperStudioBR 様; CC BY; https://freesound.org/people/SuperStudioBR/sounds/669180/

@@ -1,5 +1,5 @@
 // 異世界BGM25Timer - scriptBGM.js
-const APP_VERSION = 'v69';
+const APP_VERSION = 'v70';
 // =====================================================================
 // ---- 時間帯の定義（他の多くの処理がこれを参照するので最初に置く） ----
 const PHASES = ['morning', 'noon', 'night'];

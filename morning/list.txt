@@ -1,4 +1,4 @@
-morning1.mp3,夏一番
-morning2.mp3,新しいお店
-morning3.mp3,光を取り戻した中心街
-morning4.mp3,散歩日和
+morning1.m4a,夏一番
+morning2.m4a,新しいお店
+morning3.m4a,光を取り戻した中心街
+morning4.m4a,散歩日和
